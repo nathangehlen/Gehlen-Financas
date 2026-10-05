@@ -276,7 +276,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function autodetect(desc){var d=" "+norm(desc.toLowerCase())+" ";for(var i=0;i<CATS.length;i++){var c=CATS[i];for(var j=0;j<c.kw.length;j++){if(d.indexOf(norm(c.kw[j]))>=0)return c;}}return null;}
   function parseValor(txt){var m=txt.replace(/\./g,"").match(/(\d+(?:,\d{1,2})?)/);return m?parseFloat(m[1].replace(",",".")):null;}
 
-  var VERSION="v21";
+  var VERSION="v22";
   var S={db:null,user:null,lanc:[],contas:[],inbox:[],regras:[],dividas:null,saldos:null,metas:null,lucroCfg:null,assetsCap:null,ready:false,cur:"painel",mesSel:"2026-10",loadErr:null,loaded:false};
   var BASE_LUCRO="2026-10";
   function mesHoje(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
@@ -350,6 +350,12 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
     h+='<button class="extcard" id="painelExtBtn"><div class="ei">🧾</div><div class="et"><div class="t">Enviar extrato</div><div class="s">Empresa · Depósitos · Pessoal — eu leio e categorizo'+(nInbxNovos>0?(' · '+nInbxNovos+' na fila'):'')+'</div></div><div class="ec">›</div></button>';
     h+='<div class="card saldocard pj"><div class="k"><span class="dot pj"></span>Conta Empresa (Gehlen\'s)</div><div class="big num">'+(sPJ===null?"—":money(sPJ))+'</div>'+(sPJ!==null?'<div class="prev '+((sPJ-pendPJ)<0?"neg":"muted")+'">Previsão após contas: <b class="num">'+money(sPJ-pendPJ)+'</b></div>':'')+((atrasEmp>0||ceEmp>0)?('<div class="prev neg" style="font-size:11px;margin-top:3px">⚠ Atrasados <b class="num">'+money(atrasEmp)+'</b> · Cheque especial <b class="num">'+money(ceEmp)+'</b></div>'):'')+'</div>';
     h+='<div class="card saldocard pf"><div class="k"><span class="dot pf"></span>Conta Pessoal</div><div class="big num">'+(sPF===null?"—":money(sPF))+'</div>'+(sPF!==null?'<div class="prev '+((sPF-pendPF)<0?"neg":"muted")+'">Previsão após contas: <b class="num">'+money(sPF-pendPF)+'</b></div>':'<div class="prev muted">Conta a definir</div>')+'</div>';
+    // Negativo (cheque especial) por banco
+    if(S.dividas){var BANKN={sicoob:"Sicoob",caixa:"Caixa",cresol:"Cresol"};var dk=Object.keys(S.dividas).filter(function(k){return k!=="total"&&k!=="atualizado"&&(+S.dividas[k])>0;});
+      if(dk.length){h+='<div class="card pad"><div class="label" style="margin-bottom:9px">Negativo por banco · cheque especial</div>';
+        dk.forEach(function(k){h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:14px"><span style="font-weight:600">'+(BANKN[k]||k)+'</span><span class="num neg" style="font-weight:600">− '+money(S.dividas[k])+'</span></div>';});
+        var dtot=dk.reduce(function(a,k){return a+(+S.dividas[k]||0);},0);
+        h+='<div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:8px;margin-top:4px;font-size:14px"><span style="font-weight:700">Total negativo</span><span class="num neg" style="font-weight:700">− '+money(dtot)+'</span></div></div>';}}
     var fillPct=Math.min(100,pct),overPct=Math.max(0,Math.min(60,pct-100));
     h+='<div class="card metacard"><div class="label">Meta de faturamento · '+mesNome(S.mesSel)+'</div>'+
       '<div class="metatop"><div class="metapct '+(pct>=100?"lucrotxt":"")+'">'+Math.round(pct)+'%</div><div style="text-align:right"><div class="num" style="font-weight:600">'+money(fat)+'</div><div class="muted" style="font-size:11.5px">de '+money(meta)+'</div></div></div>'+
