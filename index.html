@@ -254,8 +254,10 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
     {id:"emprestimo",label:"Empréstimos",classe:"PJ",ic:"◇",kw:["emprestimo","empréstimo","sicoob emp","cresol"]},
     {id:"cartao",label:"Cartões",classe:"PJ",ic:"▭",kw:["cartao","cartão","nubank","neon","fatura"]},
     {id:"produtos",label:"Produtos / fornecedor",classe:"PJ",ic:"⬓",kw:["produto","fornecedor","casa do barbeiro","boleto","asaas"]},
-    {id:"juros",label:"Juros / cheque especial",classe:"PJ",ic:"⚠",kw:["juros","cheque especial","iof","tarifa"]},
+    {id:"juros",label:"Juros / cheque especial",classe:"PJ",ic:"⚠",kw:["juros","cheque especial","iof"]},
+    {id:"taxa",label:"Taxas / tarifas bancárias",classe:"PJ",ic:"▣",kw:["tarifa","taxa","anuidade","manutencao conta","cesta","ted ","doc ","pacote servico"]},
     {id:"prolabore",label:"Pró-labore",classe:"PJ",ic:"◆",kw:["pro-labore","prolabore","retirada"]},
+    {id:"transferencia",label:"Transferência entre contas",classe:"PJ",grp:"transf",ic:"⇄",kw:["mesma titularidade","entre contas","transf entre","aplicacao","aplicação","resgate aplic"]},
     {id:"mercado",label:"Mercado",classe:"PF",ic:"▥",teto:1000,kw:["mercado","super","atacad","feira"]},
     {id:"farmacia",label:"Farmácia",classe:"PF",ic:"✚",teto:200,kw:["farmacia","farmácia","remedio","remédio","drogaria"]},
     {id:"gasolina",label:"Gasolina",classe:"PF",ic:"⛽",teto:100,kw:["gasolina","combustivel","posto","etanol"]},
@@ -270,13 +272,16 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
     {id:"roupeiro",label:"Roupeiro",classe:"PF",ic:"▯",kw:["roupeiro","guarda-roupa","moveis","móveis"]}
   ];
   var CATMAP={}; CATS.forEach(function(c){CATMAP[c.id]=c;});
+  function catSlug(s){return "cc_"+String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,28);}
+  function applyCustomCats(list){(list||[]).forEach(function(c){if(!c||!c.id)return;if(CATMAP[c.id]){CATMAP[c.id].label=c.label||CATMAP[c.id].label;return;}var cc={id:c.id,label:c.label||c.id,classe:(c.classe==="PF"?"PF":"PJ"),ic:c.ic||"•",kw:[],custom:true};CATS.push(cc);CATMAP[cc.id]=cc;});}
+  function criarCategoria(label,classe){label=(label||"").trim();if(!label||!S.db)return null;var id=catSlug(label)+"_"+Date.now().toString(36).slice(-4);applyCustomCats([{id:id,label:label,classe:classe}]);var list=CATS.filter(function(c){return c.custom;}).map(function(c){return {id:c.id,label:c.label,classe:c.classe,ic:c.ic};});S.db.doc("config/customcats").set({list:list}).then(function(){toast("Categoria criada ✓");render();}).catch(function(){toast("Erro ao criar categoria");});return id;}
   function catLabel(id){return (CATMAP[id]&&CATMAP[id].label)||"—";}
   function catIc(id){return (CATMAP[id]&&CATMAP[id].ic)||"•";}
   function norm(s){return s.normalize("NFD").replace(/[̀-ͯ]/g,"");}
   function autodetect(desc){var d=" "+norm(desc.toLowerCase())+" ";for(var i=0;i<CATS.length;i++){var c=CATS[i];for(var j=0;j<c.kw.length;j++){if(d.indexOf(norm(c.kw[j]))>=0)return c;}}return null;}
   function parseValor(txt){var m=txt.replace(/\./g,"").match(/(\d+(?:,\d{1,2})?)/);return m?parseFloat(m[1].replace(",",".")):null;}
 
-  var VERSION="v22";
+  var VERSION="v24";
   var S={db:null,user:null,lanc:[],contas:[],inbox:[],regras:[],dividas:null,saldos:null,metas:null,lucroCfg:null,assetsCap:null,ready:false,cur:"painel",mesSel:"2026-10",loadErr:null,loaded:false};
   var BASE_LUCRO="2026-10";
   function mesHoje(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
@@ -302,7 +307,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function isPFpess(c){return c.classe==="PF"&&c.categoria!=="prolabore";}
   function lancMes(ym){ym=ym||S.mesSel;return S.lanc.filter(function(l){return l.mes===ym;});}
   function contasMes(ym){ym=ym||S.mesSel;return S.contas.filter(function(c){return c.mes===ym;});}
-  function somaEntradas(ym){return lancMes(ym).reduce(function(a,l){return (l.tipo==="entrada"&&l.status!=="revisar")?a+(+l.valor||0):a;},0);}
+  function somaEntradas(ym){return lancMes(ym).reduce(function(a,l){return (l.tipo==="entrada"&&l.status!=="revisar"&&l.categoria!=="transferencia")?a+(+l.valor||0):a;},0);}
   function somaSaidaPF(cat,ym){return lancMes(ym).reduce(function(a,l){return (l.tipo==="saida"&&l.classe==="PF"&&l.categoria===cat&&l.status!=="revisar")?a+(+l.valor||0):a;},0);}
   function metaMes(ym){ym=ym||S.mesSel;return S.contas.reduce(function(a,c){if(!inMeta(c))return a;if(c.mes===ym)return a+(+c.valor||0);if(c.mes<ym&&c.status!=="pago")return a+(+c.valor||0);return a;},0);}
   function fatMes(ym){return somaEntradas(ym);}
@@ -391,7 +396,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function rowMini(c){var cl=c.classe||"PJ";var st=statusEf(c);return '<div class="rowitem"><div class="ic">'+catIc(c.categoria)+'</div><div class="mid"><div class="t">'+esc(c.desc)+estim(c)+'</div><div class="s">'+(c.dia?("dia "+c.dia+" · "):"")+'<span class="tagcls '+cl+'">'+cl+'</span>'+(c.categoria==="prolabore"?' · falta':'')+'</div></div><div style="text-align:right"><div class="val num">'+money(vef(c))+'</div><div style="margin-top:3px"><span class="pill '+st+'">'+st+'</span></div></div></div>';}
 
   // ---- PESSOAL ----
-  var tetoTimer=null, pfEditId=null, pfAdding=false;
+  var tetoTimer=null, pfEditId=null, pfAdding=false, triEditId=null, triNewCat=false;
   var PROLAB=6000;
   function renderPessoal(){
     var host=el("v-pessoal");if(!S.ready){host.innerHTML=loadingCard();return;}
@@ -632,7 +637,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
     if(draft)paintDraft();
   }
   function analisar(desc,valTxt){desc=(desc||"").trim();if(!desc){toast("Escreva o que foi");el("f-desc").focus();return;}var v=valTxt&&valTxt.trim()?parseValor(valTxt):parseValor(desc);if(!v||v<=0){toast("Qual o valor?");el("f-val").focus();return;}var g=autodetect(desc);draft={desc:desc,valor:v,tipo:g?(g.tipo||"saida"):"saida",classe:g?g.classe:null,categoria:g?g.id:null};paintDraft();}
-  function opts(sel){var g=[["PJ","Barbearia"],["PF","Pessoal"]],s="";g.forEach(function(gr){s+='<optgroup label="'+gr[1]+'">';CATS.filter(function(c){return c.classe===gr[0];}).forEach(function(c){s+='<option value="'+c.id+'"'+(c.id===sel?" selected":"")+'>'+c.label+'</option>';});s+='</optgroup>';});return s;}
+  function opts(sel){var s='<option value="transferencia"'+(sel==="transferencia"?" selected":"")+'>⇄ Transferência (não é faturamento)</option>';var g=[["PJ","Barbearia"],["PF","Pessoal"]];g.forEach(function(gr){s+='<optgroup label="'+gr[1]+'">';CATS.filter(function(c){return c.classe===gr[0]&&c.grp!=="transf";}).forEach(function(c){s+='<option value="'+c.id+'"'+(c.id===sel?" selected":"")+'>'+c.label+'</option>';});s+='</optgroup>';});return s;}
   function paintDraft(){if(!draft)return;var box=el("f-result");if(!box)return;var known=!!draft.categoria;
     box.innerHTML='<div class="guess" style="margin-bottom:12px"><div class="g1">'+(known?'Identifiquei como <b>'+catLabel(draft.categoria)+'</b> ('+(draft.classe==="PJ"?"Barbearia":"Pessoal")+'). Confere ou ajuste:':'Não reconheci — escolha abaixo:')+'</div></div>'+
       '<div class="field" style="margin-bottom:10px"><label>Tipo</label><div class="seg" id="d-tipo"><button type="button" data-t="saida" aria-pressed="'+(draft.tipo==="saida")+'">Saída</button><button type="button" data-t="entrada" aria-pressed="'+(draft.tipo==="entrada")+'">Entrada</button></div></div>'+
@@ -647,19 +652,35 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function salvarLanc(){if(!draft)return;if(!S.db){toast("Sem conexão");return;}var btn=el("d-save");btn.disabled=true;btn.textContent="Salvando…";var revisar=!draft.categoria||!draft.classe;
     S.db.collection("lancamentos").add({desc:draft.desc,valor:draft.valor,tipo:draft.tipo||"saida",classe:draft.classe||null,categoria:draft.categoria||null,status:revisar?"revisar":"ok",mes:S.mesSel,ts:Date.now()}).then(function(){draft=null;toast(revisar?"Salvo — foi pra Triagem":"Lançado ✓");reloadLanc();renderLancar();}).catch(function(){btn.disabled=false;btn.textContent="Salvar lançamento";toast("Não deu pra salvar");});}
 
+  function novaCatBlock(){return triNewCat
+    ? '<div class="card pad" style="display:flex;flex-direction:column;gap:9px"><div class="label" style="margin:0">Nova categoria</div><input class="pfi" id="nc-name" placeholder="Nome (ex: Taxa da maquininha)"><div class="seg" id="nc-cls"><button type="button" data-c="PJ" aria-pressed="true">Barbearia</button><button type="button" data-c="PF" aria-pressed="false">Pessoal</button></div><div style="display:flex;gap:7px"><button class="pfsave" id="nc-save">Criar</button><button class="pfghost" id="nc-cancel">Cancelar</button></div></div>'
+    : '<div style="display:flex;justify-content:flex-end;margin:2px 0"><button class="addbtn" id="nc-open">＋ Nova categoria</button></div>';}
+  function wireNovaCat(){var o=el("nc-open");if(o)o.onclick=function(){triNewCat=true;renderTriagem();};
+    var c=el("nc-cancel");if(c)c.onclick=function(){triNewCat=false;renderTriagem();};
+    var s=el("nc-save");if(s)s.onclick=function(){var nm=el("nc-name").value,cl="PJ",box=el("nc-cls");if(box)box.querySelectorAll("button").forEach(function(b){if(b.getAttribute("aria-pressed")==="true")cl=b.getAttribute("data-c");});if(!(nm||"").trim()){toast("Dê um nome à categoria");return;}criarCategoria(nm,cl);triNewCat=false;};
+    var cls=el("nc-cls");if(cls)cls.querySelectorAll("button").forEach(function(b){b.onclick=function(){cls.querySelectorAll("button").forEach(function(x){x.setAttribute("aria-pressed",x===b);});};});}
   function renderTriagem(){
     var host=el("v-triagem");if(!S.ready){host.innerHTML=loadingCard();return;}
     var list=triagemList().slice().sort(function(a,b){return (b.ts||0)-(a.ts||0);});
-    if(!list.length){host.innerHTML=dbBanner()+'<div class="card pad empty"><div class="em">✓</div>Triagem vazia. Tudo categorizado!</div>';return;}
-    var h=dbBanner()+'<div class="label" style="margin:2px 2px 0">Triagem — defina PF/PJ e a categoria</div>';
-    list.forEach(function(l){h+='<div class="card pad" style="display:flex;flex-direction:column;gap:10px" data-rev="'+l.id+'"><div style="display:flex;justify-content:space-between;gap:10px"><div style="min-width:0"><b>'+esc(l.desc)+'</b><div class="s muted" style="font-size:12px">'+(dataLanc(l)?dataLanc(l)+" · ":"")+(l.tipo==="entrada"?"entrada":"saída")+'</div></div><span class="val num">'+money(l.valor)+'</span></div>'+
-      '<div class="seg cls" data-f="cls"><button type="button" class="pjsel" data-c="PJ" aria-pressed="'+(l.classe==="PJ")+'">Barbearia</button><button type="button" class="pfsel" data-c="PF" aria-pressed="'+(l.classe==="PF")+'">Pessoal</button></div>'+
-      '<select class="inp" data-f="cat"><option value="">Categoria…</option>'+opts(l.categoria)+'</select><button class="btn" data-f="ok">Confirmar</button></div>';});
+    if(!list.length){host.innerHTML=dbBanner()+'<div class="card pad empty"><div class="em">✓</div>Triagem vazia. Tudo categorizado!</div>'+novaCatBlock();wireNovaCat();return;}
+    var h=dbBanner()+'<div class="label" style="margin:2px 2px 0">Triagem — defina PF/PJ e a categoria</div>'+novaCatBlock();
+    list.forEach(function(l){var ed=triEditId===l.id;
+      h+='<div class="card pad" style="display:flex;flex-direction:column;gap:10px" data-rev="'+l.id+'"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div style="min-width:0;flex:1">'+
+        (ed?'<input class="pfi" data-f="edesc" value="'+esc(l.desc)+'" placeholder="Descrição">':'<b>'+esc(l.desc)+'</b>')+
+        '<div class="s muted" style="font-size:12px;margin-top:3px">'+(dataLanc(l)?dataLanc(l)+" · ":"")+(l.tipo==="entrada"?"entrada":"saída")+'</div></div>'+
+        (ed?'<input class="pfi" data-f="eval" type="number" inputmode="decimal" value="'+(+l.valor||0)+'" style="width:108px;text-align:right">':'<span class="val num">'+money(l.valor)+'</span>')+'</div>'+
+        '<div class="seg cls" data-f="cls"><button type="button" class="pjsel" data-c="PJ" aria-pressed="'+(l.classe==="PJ")+'">Barbearia</button><button type="button" class="pfsel" data-c="PF" aria-pressed="'+(l.classe==="PF")+'">Pessoal</button></div>'+
+        '<select class="inp" data-f="cat"><option value="">Categoria…</option>'+opts(l.categoria)+'</select>'+
+        '<div style="display:flex;gap:7px"><button class="btn" data-f="ok" style="flex:1">Confirmar</button><button class="pfghost" data-f="edit" title="Editar nome/valor">'+(ed?'↩':'✎')+'</button></div></div>';});
     host.innerHTML=h;
+    wireNovaCat();
     host.querySelectorAll("[data-rev]").forEach(function(card){var id=card.getAttribute("data-rev"),sel={classe:null};
       card.querySelectorAll('[data-f="cls"] button').forEach(function(b){if(b.getAttribute("aria-pressed")==="true")sel.classe=b.getAttribute("data-c");b.addEventListener("click",function(){sel.classe=b.getAttribute("data-c");card.querySelectorAll('[data-f="cls"] button').forEach(function(x){x.setAttribute("aria-pressed",x===b);});});});
-      var catSel=card.querySelector('[data-f="cat"]');catSel.addEventListener("change",function(){if(this.value){var c=CATMAP[this.value];sel.classe=c.classe;card.querySelectorAll('[data-f="cls"] button').forEach(function(x){x.setAttribute("aria-pressed",x.getAttribute("data-c")===c.classe);});}});
-      card.querySelector('[data-f="ok"]').addEventListener("click",function(){var cat=catSel.value||null,classe=sel.classe||(cat?CATMAP[cat].classe:null);if(!cat||!classe){toast("Escolha PF/PJ e a categoria");return;}var btn=card.querySelector('[data-f="ok"]');btn.disabled=true;btn.textContent="Salvando…";var up={classe:classe,categoria:cat,status:"ok"};var c=CATMAP[cat];if(c.tipo)up.tipo=c.tipo;S.db.doc("lancamentos/"+id).update(up).then(function(){var ld=S.lanc.filter(function(x){return x.id===id;})[0]||{};saveRegra(ld.desc,cat,classe);toast("Categorizado ✓ — vou lembrar desse");reloadLanc();}).catch(function(){btn.disabled=false;btn.textContent="Confirmar";toast("Erro");});});
+      var catSel=card.querySelector('[data-f="cat"]');catSel.addEventListener("change",function(){if(this.value&&CATMAP[this.value]){var c=CATMAP[this.value];sel.classe=c.classe;card.querySelectorAll('[data-f="cls"] button').forEach(function(x){x.setAttribute("aria-pressed",x.getAttribute("data-c")===c.classe);});}});
+      card.querySelector('[data-f="edit"]').addEventListener("click",function(){triEditId=(triEditId===id?null:id);renderTriagem();});
+      card.querySelector('[data-f="ok"]').addEventListener("click",function(){var cat=catSel.value||null,classe=sel.classe||(cat&&CATMAP[cat]?CATMAP[cat].classe:null);if(!cat){toast("Escolha a categoria");return;}if(!classe)classe="PJ";var btn=card.querySelector('[data-f="ok"]');btn.disabled=true;btn.textContent="Salvando…";var up={classe:classe,categoria:cat,status:"ok"};var c=CATMAP[cat];if(c&&c.tipo)up.tipo=c.tipo;
+        var ei=card.querySelector('[data-f="edesc"]'),ev=card.querySelector('[data-f="eval"]');if(ei)up.desc=(ei.value||"").trim();if(ev){var nv=parseFloat(ev.value);if(!isNaN(nv))up.valor=nv;}
+        S.db.doc("lancamentos/"+id).update(up).then(function(){triEditId=null;var nd=up.desc||((S.lanc.filter(function(x){return x.id===id;})[0]||{}).desc);if(cat!=="transferencia")saveRegra(nd,cat,classe);toast(cat==="transferencia"?"Marcado como transferência ✓":"Categorizado ✓ — vou lembrar");reloadLanc();}).catch(function(){btn.disabled=false;btn.textContent="Confirmar";toast("Erro");});});
     });
   }
 
@@ -732,7 +753,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function reloadConfig(){return sb.from("config").select("*").then(function(res){
     (res.data||[]).forEach(function(row){var d=row.dados||{};
       if(row.chave==="saldos")S.saldos=d;else if(row.chave==="dividas")S.dividas=d;else if(row.chave==="metas")S.metas=d;
-      else if(row.chave==="lucro")S.lucroCfg=d;else if(row.chave==="tetos"){for(var k in d){if(CATMAP[k])CATMAP[k].teto=d[k];}}});
+      else if(row.chave==="lucro")S.lucroCfg=d;else if(row.chave==="customcats")applyCustomCats(d.list);else if(row.chave==="tetos"){for(var k in d){if(CATMAP[k])CATMAP[k].teto=d[k];}}});
     render();}).catch(function(){});}
   function startApp(){
     S.db=supaDB;S.assetsCap=supaAssets;S.ready=true;S.loaded=true;
