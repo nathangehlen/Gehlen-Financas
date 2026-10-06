@@ -160,6 +160,7 @@
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
   #gate{position:fixed;inset:0;z-index:100;background:var(--bg);background-image:var(--glow);display:flex;align-items:center;justify-content:center;padding:24px}
+  #gate[hidden]{display:none!important}
   .gatebox{width:100%;max-width:330px;display:flex;flex-direction:column;gap:12px;text-align:center}
   .gatemark{width:66px;height:66px;border-radius:19px;margin:0 auto 4px;background:linear-gradient(145deg,var(--accent),var(--accent-ink));display:grid;place-items:center;color:#fff;font-family:var(--f-disp);font-weight:700;font-size:36px;box-shadow:0 8px 24px var(--accent-65)}
   .gatebox h2{margin:0;font-family:var(--f-disp);text-transform:uppercase;letter-spacing:.09em;font-size:23px}
@@ -181,7 +182,7 @@
     <input id="lg-pass" class="inp" type="password" autocomplete="current-password" placeholder="Senha">
     <div id="lg-err" class="gateerr"></div>
     <button id="lg-btn" class="btn">Entrar</button>
-    <div class="gatever">versão v26 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
+    <div class="gatever">versão v27 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
   </div>
 </div>
 
@@ -284,7 +285,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function autodetect(desc){var d=" "+norm(desc.toLowerCase())+" ";for(var i=0;i<CATS.length;i++){var c=CATS[i];for(var j=0;j<c.kw.length;j++){if(d.indexOf(norm(c.kw[j]))>=0)return c;}}return null;}
   function parseValor(txt){var m=txt.replace(/\./g,"").match(/(\d+(?:,\d{1,2})?)/);return m?parseFloat(m[1].replace(",",".")):null;}
 
-  var VERSION="v26";
+  var VERSION="v27";
   var S={db:null,user:null,lanc:[],contas:[],inbox:[],regras:[],dividas:null,saldos:null,metas:null,lucroCfg:null,assetsCap:null,ready:false,cur:"painel",mesSel:"2026-10",loadErr:null,loaded:false};
   var BASE_LUCRO="2026-10";
   function mesHoje(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
@@ -770,7 +771,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
       .on("postgres_changes",{event:"*",schema:"public",table:"inbox"},function(){reloadInbox();})
       .subscribe();}catch(e){}
   }
-  function showGate(s){var g=el("gate");if(g)g.hidden=!s;}
+  function showGate(s){var g=el("gate");if(g){g.hidden=!s;g.style.display=s?"flex":"none";}}
   function doLogin(){var em=(el("lg-email").value||"").trim(),pw=el("lg-pass").value||"",btn=el("lg-btn"),err=el("lg-err");
     if(!em||!pw){err.textContent="Preencha e-mail e senha.";return;}
     btn.disabled=true;btn.textContent="Entrando…";err.textContent="";
