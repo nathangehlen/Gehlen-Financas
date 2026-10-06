@@ -182,7 +182,7 @@
     <input id="lg-pass" class="inp" type="password" autocomplete="current-password" placeholder="Senha">
     <div id="lg-err" class="gateerr"></div>
     <button id="lg-btn" class="btn">Entrar</button>
-    <div class="gatever">versão v27 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
+    <div class="gatever">versão v28 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
   </div>
 </div>
 
@@ -285,7 +285,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function autodetect(desc){var d=" "+norm(desc.toLowerCase())+" ";for(var i=0;i<CATS.length;i++){var c=CATS[i];for(var j=0;j<c.kw.length;j++){if(d.indexOf(norm(c.kw[j]))>=0)return c;}}return null;}
   function parseValor(txt){var m=txt.replace(/\./g,"").match(/(\d+(?:,\d{1,2})?)/);return m?parseFloat(m[1].replace(",",".")):null;}
 
-  var VERSION="v27";
+  var VERSION="v28";
   var S={db:null,user:null,lanc:[],contas:[],inbox:[],regras:[],dividas:null,saldos:null,metas:null,lucroCfg:null,assetsCap:null,ready:false,cur:"painel",mesSel:"2026-10",loadErr:null,loaded:false};
   var BASE_LUCRO="2026-10";
   function mesHoje(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
@@ -393,7 +393,9 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
     var prox=cm.filter(function(c){return statusEf(c)!=="pago";}).sort(function(a,b){return (a.dia||0)-(b.dia||0);}).slice(0,4);
     h+='<div><div class="label" style="margin:4px 2px 8px">Próximas contas</div>'+(prox.length?'<div class="card">'+prox.map(rowMini).join("")+'</div>':'<div class="card pad empty">Nada em aberto. 👍</div>')+'</div>';
     if(S.ready&&S.db&&S.loaded&&S.contas.length===0){h+='<div class="card pad" style="border:1px solid #f0a; background:rgba(255,0,170,.06)"><b>Sem dados carregados.</b> Toque no ↻ no topo pra recarregar.'+(S.loadErr?('<br><span class="muted" style="font-size:11px">cód: '+S.loadErr+'</span>'):'')+'</div>';}
-    h+='<div class="muted" style="text-align:center;font-size:11px;margin-top:10px">Caixa Gehlen\'s '+VERSION+' · '+S.contas.length+' contas'+(S.loadErr?(' · erro: '+S.loadErr):'')+'</div>';
+    var _atu=(S.saldos&&S.saldos.atualizado)?String(S.saldos.atualizado):"";var _atuf=_atu.length>=10?(_atu.slice(8,10)+"/"+_atu.slice(5,7)+"/"+_atu.slice(0,4)):"—";
+    h+='<div style="text-align:center;font-size:13px;margin-top:18px;font-weight:700;color:var(--fg)">Atualizado até '+_atuf+'</div>';
+    h+='<div class="muted" style="text-align:center;font-size:11px;margin-top:6px">Caixa Gehlen\'s '+VERSION+' · '+S.contas.length+' contas'+(S.loadErr?(' · erro: '+S.loadErr):'')+'</div>';
     host.innerHTML=h;
     var peb=el("painelExtBtn");if(peb)peb.addEventListener("click",function(){go("extratos");});
   }
