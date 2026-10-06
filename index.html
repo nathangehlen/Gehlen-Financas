@@ -166,6 +166,8 @@
   .gatesub{margin:0 0 12px;color:var(--muted);font-size:13px;letter-spacing:.03em}
   .gatebox .inp{text-align:left;font-size:16px}
   .gateerr{color:var(--bad);font-size:12.5px;min-height:16px;text-align:left}
+  .gatever{margin-top:14px;font-size:11px;color:var(--muted);opacity:.7;letter-spacing:.02em}
+  .gatever a.gatereset{color:var(--muted);text-decoration:underline;cursor:pointer}
 </style>
 
 </head>
@@ -179,6 +181,7 @@
     <input id="lg-pass" class="inp" type="password" autocomplete="current-password" placeholder="Senha">
     <div id="lg-err" class="gateerr"></div>
     <button id="lg-btn" class="btn">Entrar</button>
+    <div class="gatever">versão v26 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
   </div>
 </div>
 
@@ -281,7 +284,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function autodetect(desc){var d=" "+norm(desc.toLowerCase())+" ";for(var i=0;i<CATS.length;i++){var c=CATS[i];for(var j=0;j<c.kw.length;j++){if(d.indexOf(norm(c.kw[j]))>=0)return c;}}return null;}
   function parseValor(txt){var m=txt.replace(/\./g,"").match(/(\d+(?:,\d{1,2})?)/);return m?parseFloat(m[1].replace(",",".")):null;}
 
-  var VERSION="v25";
+  var VERSION="v26";
   var S={db:null,user:null,lanc:[],contas:[],inbox:[],regras:[],dividas:null,saldos:null,metas:null,lucroCfg:null,assetsCap:null,ready:false,cur:"painel",mesSel:"2026-10",loadErr:null,loaded:false};
   var BASE_LUCRO="2026-10";
   function mesHoje(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
@@ -771,12 +774,26 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function doLogin(){var em=(el("lg-email").value||"").trim(),pw=el("lg-pass").value||"",btn=el("lg-btn"),err=el("lg-err");
     if(!em||!pw){err.textContent="Preencha e-mail e senha.";return;}
     btn.disabled=true;btn.textContent="Entrando…";err.textContent="";
-    sb.auth.signInWithPassword({email:em,password:pw}).then(function(r){btn.disabled=false;btn.textContent="Entrar";
+    var finished=false;
+    var wd=setTimeout(function(){if(finished)return;
+      sb.auth.getSession().then(function(r){if(finished)return;
+        if(r&&r.data&&r.data.session){finished=true;showGate(false);startApp();}
+        else{btn.disabled=false;btn.textContent="Entrar";err.textContent="Demorou demais. Toque em 'limpar cache' abaixo e tente de novo.";}
+      }).catch(function(){if(finished)return;btn.disabled=false;btn.textContent="Entrar";err.textContent="Demorou demais. Toque em 'limpar cache' abaixo e tente de novo.";});
+    },6000);
+    sb.auth.signInWithPassword({email:em,password:pw}).then(function(r){if(finished)return;finished=true;clearTimeout(wd);btn.disabled=false;btn.textContent="Entrar";
       if(r.error){err.textContent="E-mail ou senha incorretos.";return;}showGate(false);startApp();})
-      .catch(function(){btn.disabled=false;btn.textContent="Entrar";err.textContent="Erro ao entrar. Tente de novo.";});}
+      .catch(function(){if(finished)return;finished=true;clearTimeout(wd);btn.disabled=false;btn.textContent="Entrar";err.textContent="Erro ao entrar. Tente de novo.";});}
   function doLogout(){sb.auth.signOut().then(function(){location.reload();}).catch(function(){location.reload();});}
 
   (function boot(){
+    try{if(/[?&]reset=1/.test(location.search)){
+      var fin=function(){try{var rm=[];for(var k in localStorage){if(k.indexOf("sb-")===0)rm.push(k);}rm.forEach(function(x){localStorage.removeItem(x);});}catch(e){}location.replace(location.pathname);};
+      (navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}):Promise.resolve())
+        .then(function(){return window.caches?caches.keys().then(function(ks){return Promise.all(ks.map(function(x){return caches.delete(x);}));}):null;})
+        .then(fin,fin);
+      return;
+    }}catch(e){}
     try{var hv=location.hash.slice(1);if(views.indexOf(hv)>=0)S.cur=hv;}catch(e){}
     go(S.cur);
     if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(function(){});}
