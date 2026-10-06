@@ -281,7 +281,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function autodetect(desc){var d=" "+norm(desc.toLowerCase())+" ";for(var i=0;i<CATS.length;i++){var c=CATS[i];for(var j=0;j<c.kw.length;j++){if(d.indexOf(norm(c.kw[j]))>=0)return c;}}return null;}
   function parseValor(txt){var m=txt.replace(/\./g,"").match(/(\d+(?:,\d{1,2})?)/);return m?parseFloat(m[1].replace(",",".")):null;}
 
-  var VERSION="v24";
+  var VERSION="v25";
   var S={db:null,user:null,lanc:[],contas:[],inbox:[],regras:[],dividas:null,saldos:null,metas:null,lucroCfg:null,assetsCap:null,ready:false,cur:"painel",mesSel:"2026-10",loadErr:null,loaded:false};
   var BASE_LUCRO="2026-10";
   function mesHoje(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
@@ -717,7 +717,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
     toast(todo.length+" lançamento(s) categorizado(s) pela memória");}
 
   // ================= Supabase (dados + login) =================
-  var sb=window.supabase.createClient(window.SB_URL,window.SB_ANON);
+  var sb=window.supabase.createClient(window.SB_URL,window.SB_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,lock:function(name,acquireTimeout,fn){return fn();}}});
   function pkOf(n){return n==="config"?"chave":"id";}
   function toRow(n,o,id){var r={};
     if(n==="contas"){var cid=(id!=null?id:(o.id!=null?o.id:null));if(cid!=null)r.id=cid;if("desc"in o)r.descricao=o.desc;["valor","dia","categoria","classe","status","mes","prov"].forEach(function(k){if(k in o)r[k]=o[k];});return r;}
