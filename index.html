@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Financeiro — Gehlen's</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Figtree:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Figtree:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap">
 <style>
   /* Layout: preto como cor principal (barra superior e menu inferior sempre pretos), vermelho escuro da marca como acento, branco. Fundo escuro em carvão com brilho sutil pra não ficar chapado. */
   :root{
@@ -25,25 +25,26 @@
     --pj:#c41e2a; --pf:#575563; --good:#1f9d57; --lucro:#1f9d57; --warn:#b9800f; --bad:#c41e2a;
     --shadow:0 1px 2px rgba(18,16,22,.05),0 10px 26px rgba(18,16,22,.07);
     --r:16px; --f-disp:"Oswald","Arial Narrow",system-ui,sans-serif;
+    --f-serif:"Playfair Display",Georgia,"Times New Roman",serif;
     --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
   }
   @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-    --bg:#151317; --surface:#1f1d23; --surface2:#28252e; --surface3:#322e38; --fg:#f4f2f6; --muted:#a6a2ae; --faint:#726e7a;
-    --line:#332f3a; --accent:#d82834; --accent-ink:#ff8188; --accent-soft:rgba(216,40,52,.16); --on-accent:#ffffff;
-    --accent-45:rgba(216,40,52,.45); --accent-65:rgba(216,40,52,.65);
-    --chrome:#0c0b0e; --on-chrome:#f5f4f6; --chrome-dim:rgba(255,255,255,.52); --chrome-line:rgba(255,255,255,.07); --chrome-btn:rgba(255,255,255,.08); --chrome-btnln:rgba(255,255,255,.15);
-    --glow:radial-gradient(1100px 520px at 50% -14%, rgba(216,40,52,.13), transparent 60%);
+    --bg:#0a0809; --surface:#18141a; --surface2:#201b22; --surface3:#2a232c; --fg:#f5f3f6; --muted:#9a949e; --faint:#6b656f;
+    --line:#2a242d; --accent:#df2531; --accent-ink:#9c1620; --accent-soft:rgba(223,37,49,.16); --on-accent:#ffffff;
+    --accent-45:rgba(223,37,49,.45); --accent-65:rgba(223,37,49,.60);
+    --chrome:#0b080a; --on-chrome:#f5f3f6; --chrome-dim:rgba(255,255,255,.5); --chrome-line:rgba(255,255,255,.06); --chrome-btn:rgba(255,255,255,.06); --chrome-btnln:rgba(255,255,255,.12);
+    --glow:radial-gradient(1000px 540px at 50% -12%, rgba(223,37,49,.20), transparent 62%);
     --pj:#e5414c; --pf:#acaab6; --good:#37c47e; --lucro:#37c47e; --warn:#e2b55e; --bad:#e5414c;
-    --shadow:0 1px 2px rgba(0,0,0,.5),0 14px 32px rgba(0,0,0,.45); color-scheme:dark;
+    --shadow:0 1px 2px rgba(0,0,0,.55),0 16px 36px rgba(0,0,0,.5); color-scheme:dark;
   }}
   :root[data-theme="dark"]{
-    --bg:#151317; --surface:#1f1d23; --surface2:#28252e; --surface3:#322e38; --fg:#f4f2f6; --muted:#a6a2ae; --faint:#726e7a;
-    --line:#332f3a; --accent:#d82834; --accent-ink:#ff8188; --accent-soft:rgba(216,40,52,.16); --on-accent:#ffffff;
-    --accent-45:rgba(216,40,52,.45); --accent-65:rgba(216,40,52,.65);
-    --chrome:#0c0b0e; --on-chrome:#f5f4f6; --chrome-dim:rgba(255,255,255,.52); --chrome-line:rgba(255,255,255,.07); --chrome-btn:rgba(255,255,255,.08); --chrome-btnln:rgba(255,255,255,.15);
-    --glow:radial-gradient(1100px 520px at 50% -14%, rgba(216,40,52,.13), transparent 60%);
+    --bg:#0a0809; --surface:#18141a; --surface2:#201b22; --surface3:#2a232c; --fg:#f5f3f6; --muted:#9a949e; --faint:#6b656f;
+    --line:#2a242d; --accent:#df2531; --accent-ink:#9c1620; --accent-soft:rgba(223,37,49,.16); --on-accent:#ffffff;
+    --accent-45:rgba(223,37,49,.45); --accent-65:rgba(223,37,49,.60);
+    --chrome:#0b080a; --on-chrome:#f5f3f6; --chrome-dim:rgba(255,255,255,.5); --chrome-line:rgba(255,255,255,.06); --chrome-btn:rgba(255,255,255,.06); --chrome-btnln:rgba(255,255,255,.12);
+    --glow:radial-gradient(1000px 540px at 50% -12%, rgba(223,37,49,.20), transparent 62%);
     --pj:#e5414c; --pf:#acaab6; --good:#37c47e; --lucro:#37c47e; --warn:#e2b55e; --bad:#e5414c;
-    --shadow:0 1px 2px rgba(0,0,0,.5),0 14px 32px rgba(0,0,0,.45); color-scheme:dark;
+    --shadow:0 1px 2px rgba(0,0,0,.55),0 16px 36px rgba(0,0,0,.5); color-scheme:dark;
   }
   *{box-sizing:border-box} html,body{height:100%}
   body{background:var(--bg);background-image:var(--glow);background-attachment:fixed;background-repeat:no-repeat;color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45;margin:0;-webkit-font-smoothing:antialiased}
@@ -141,7 +142,7 @@
   .seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
   .seg.cls button.pjsel[aria-pressed="true"]{background:var(--pj);border-color:var(--pj);color:#fff}
   .seg.cls button.pfsel[aria-pressed="true"]{background:var(--pf);border-color:var(--pf);color:#fff}
-  .btn{display:block;width:100%;padding:14px;border:0;border-radius:13px;background:linear-gradient(135deg,var(--accent),var(--accent-ink));color:var(--on-accent);font-family:var(--f-disp);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:15px}
+  .btn{display:block;width:100%;padding:14px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent-ink));color:var(--on-accent);font-family:var(--f-disp);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:15px;box-shadow:0 6px 20px var(--accent-45)}
   .btn:active{filter:brightness(.94)} .btn:disabled{opacity:.5}
   .guess{border:1px dashed var(--accent);border-radius:12px;padding:12px 14px;background:color-mix(in srgb,var(--accent) 7%,transparent)}
   .guess .g1{font-size:12px;color:var(--muted)} .guess b{color:var(--accent-ink)}
@@ -159,13 +160,14 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
-  #gate{position:fixed;inset:0;z-index:100;background:var(--bg);background-image:var(--glow);display:flex;align-items:center;justify-content:center;padding:24px}
+  #gate{position:fixed;inset:0;z-index:100;background:var(--bg);background-image:var(--glow);background-repeat:no-repeat;display:flex;align-items:center;justify-content:center;padding:24px}
   #gate[hidden]{display:none!important}
-  .gatebox{width:100%;max-width:330px;display:flex;flex-direction:column;gap:12px;text-align:center}
-  .gatemark{width:66px;height:66px;border-radius:19px;margin:0 auto 4px;background:linear-gradient(145deg,var(--accent),var(--accent-ink));display:grid;place-items:center;color:#fff;font-family:var(--f-disp);font-weight:700;font-size:36px;box-shadow:0 8px 24px var(--accent-65)}
-  .gatebox h2{margin:0;font-family:var(--f-disp);text-transform:uppercase;letter-spacing:.09em;font-size:23px}
-  .gatesub{margin:0 0 12px;color:var(--muted);font-size:13px;letter-spacing:.03em}
-  .gatebox .inp{text-align:left;font-size:16px}
+  .gatebox{width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px;text-align:center;background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:32px 24px 22px;box-shadow:var(--shadow)}
+  .gatelogo{font-family:var(--f-serif);font-weight:700;font-size:35px;line-height:1;color:var(--fg);letter-spacing:.01em}
+  .gateclub{font-family:var(--f-disp);font-weight:600;letter-spacing:.42em;font-size:10px;color:var(--muted);margin:6px 0 0;padding-left:.42em}
+  .gatesub{margin:8px 0 14px;color:var(--muted);font-size:11px;letter-spacing:.22em;text-transform:uppercase;font-weight:600}
+  .gatebox .inp{text-align:left;font-size:16px;background:var(--bg);border:1px solid var(--line);color:var(--fg);border-radius:12px;padding:13px 14px}
+  .gatebox .inp::placeholder{color:var(--faint)}
   .gateerr{color:var(--bad);font-size:12.5px;min-height:16px;text-align:left}
   .gatever{margin-top:14px;font-size:11px;color:var(--muted);opacity:.7;letter-spacing:.02em}
   .gatever a.gatereset{color:var(--muted);text-decoration:underline;cursor:pointer}
@@ -175,14 +177,14 @@
 <body>
 <div id="gate">
   <div class="gatebox">
-    <div class="gatemark">G</div>
-    <h2>Financeiro</h2>
-    <p class="gatesub">Gehlen's Club</p>
+    <div class="gatelogo">Gehlen's</div>
+    <div class="gateclub">CLUB</div>
+    <p class="gatesub">Financeiro · Acesso restrito</p>
     <input id="lg-email" class="inp" type="email" inputmode="email" autocomplete="username" placeholder="E-mail">
     <input id="lg-pass" class="inp" type="password" autocomplete="current-password" placeholder="Senha">
     <div id="lg-err" class="gateerr"></div>
     <button id="lg-btn" class="btn">Entrar</button>
-    <div class="gatever">versão v33 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
+    <div class="gatever">versão v35 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
   </div>
 </div>
 
@@ -285,7 +287,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function autodetect(desc){var d=" "+norm(desc.toLowerCase())+" ";for(var i=0;i<CATS.length;i++){var c=CATS[i];for(var j=0;j<c.kw.length;j++){if(d.indexOf(norm(c.kw[j]))>=0)return c;}}return null;}
   function parseValor(txt){var m=txt.replace(/\./g,"").match(/(\d+(?:,\d{1,2})?)/);return m?parseFloat(m[1].replace(",",".")):null;}
 
-  var VERSION="v33";
+  var VERSION="v35";
   var S={db:null,user:null,lanc:[],contas:[],inbox:[],regras:[],dividas:null,saldos:null,metas:null,lucroCfg:null,assetsCap:null,ready:false,cur:"painel",mesSel:"2026-10",loadErr:null,loaded:false};
   var BASE_LUCRO="2026-10";
   function mesHoje(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
@@ -297,7 +299,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function despTotMes(ym){return metaMes(ym)+despVarMes(ym);}
   function snapsObj(){return (S.lucroCfg&&S.lucroCfg.snaps&&typeof S.lucroCfg.snaps==="object")?S.lucroCfg.snaps:{};}
 
-  (function(){try{var t=localStorage.getItem("gc_theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();
+  (function(){try{var t=localStorage.getItem("gc_theme")||"dark";document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();
   el("themeBtn").addEventListener("click",function(){var cur=document.documentElement.getAttribute("data-theme");var dark=cur?cur==="dark":matchMedia("(prefers-color-scheme:dark)").matches;var nx=dark?"light":"dark";document.documentElement.setAttribute("data-theme",nx);try{localStorage.setItem("gc_theme",nx);}catch(e){}});
   el("reloadBtn").addEventListener("click",function(){toast("Recarregando dados…");S.loadErr=null;reloadContas();reloadLanc();});
   el("mprev").addEventListener("click",function(){S.mesSel=shiftMes(S.mesSel,-1);render();});
@@ -391,7 +393,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
       var pctR=esperado>0?Math.round(fat/esperado*100):100,fillW=Math.max(3,Math.min(100,pctR));
       var cor=acima?"var(--good)":"var(--bad)",ic=acima?"▲":"▼",tit=acima?"Acima do ritmo":"Abaixo do ritmo";
       var frase=acima?('Você está <b>'+money(diff)+'</b> à frente da média necessária.'):('Faltam <b>'+money(-diff)+'</b> pra chegar na média do mês.');
-      h+='<div class="card" style="border-left:3px solid '+cor+'"><div class="label">Ritmo da meta · até '+dlabel+'</div>'
+      h+='<div class="card pad" style="border-left:3px solid '+cor+'"><div class="label">Ritmo da meta · até '+dlabel+'</div>'
         +'<div style="display:flex;align-items:baseline;justify-content:space-between;margin:2px 0 8px"><div style="font-family:var(--f-disp);font-weight:700;font-size:18px;color:'+cor+'">'+ic+' '+tit+'</div><div style="font-family:var(--f-disp);font-weight:700;font-size:22px;color:'+cor+'">'+pctR+'%</div></div>'
         +'<div style="height:12px;border-radius:999px;background:var(--line);overflow:hidden"><div style="height:100%;width:'+fillW+'%;background:'+cor+';border-radius:999px"></div></div>'
         +'<div style="text-align:center;font-size:10px;color:var(--muted);margin:4px 0 10px">100% = ritmo certo pra fechar o mês no zero a zero</div>'
