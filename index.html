@@ -182,7 +182,7 @@
     <input id="lg-pass" class="inp" type="password" autocomplete="current-password" placeholder="Senha">
     <div id="lg-err" class="gateerr"></div>
     <button id="lg-btn" class="btn">Entrar</button>
-    <div class="gatever">versão v28 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
+    <div class="gatever">versão v33 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
   </div>
 </div>
 
@@ -285,12 +285,17 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function autodetect(desc){var d=" "+norm(desc.toLowerCase())+" ";for(var i=0;i<CATS.length;i++){var c=CATS[i];for(var j=0;j<c.kw.length;j++){if(d.indexOf(norm(c.kw[j]))>=0)return c;}}return null;}
   function parseValor(txt){var m=txt.replace(/\./g,"").match(/(\d+(?:,\d{1,2})?)/);return m?parseFloat(m[1].replace(",",".")):null;}
 
-  var VERSION="v28";
+  var VERSION="v33";
   var S={db:null,user:null,lanc:[],contas:[],inbox:[],regras:[],dividas:null,saldos:null,metas:null,lucroCfg:null,assetsCap:null,ready:false,cur:"painel",mesSel:"2026-10",loadErr:null,loaded:false};
   var BASE_LUCRO="2026-10";
   function mesHoje(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
   function fechadosArr(){return (S.lucroCfg&&Array.isArray(S.lucroCfg.fechados))?S.lucroCfg.fechados:[];}
   function isFechado(ym){return fechadosArr().indexOf(ym)>=0;}
+  function chequeEspecialTotal(){if(!S.dividas)return 0;var t=0;for(var k in S.dividas){if(k==="total"||k==="atualizado")continue;var v=+S.dividas[k]||0;if(v>0)t+=v;}return t;}
+  function saldosEmConta(){var j=(S.saldos&&S.saldos.pj!=null)?(+S.saldos.pj||0):0;var f=(S.saldos&&S.saldos.pf!=null)?(+S.saldos.pf||0):0;return j+f;}
+  function despVarMes(ym){return lancMes(ym).reduce(function(a,l){return (l.tipo==="saida"&&l.status!=="revisar"&&l.classe!=="PF"&&l.categoria!=="prolabore"&&l.categoria!=="transferencia")?a+(+l.valor||0):a;},0);}
+  function despTotMes(ym){return metaMes(ym)+despVarMes(ym);}
+  function snapsObj(){return (S.lucroCfg&&S.lucroCfg.snaps&&typeof S.lucroCfg.snaps==="object")?S.lucroCfg.snaps:{};}
 
   (function(){try{var t=localStorage.getItem("gc_theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();
   el("themeBtn").addEventListener("click",function(){var cur=document.documentElement.getAttribute("data-theme");var dark=cur?cur==="dark":matchMedia("(prefers-color-scheme:dark)").matches;var nx=dark?"light":"dark";document.documentElement.setAttribute("data-theme",nx);try{localStorage.setItem("gc_theme",nx);}catch(e){}});
@@ -359,6 +364,12 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
     h+='<button class="extcard" id="painelExtBtn"><div class="ei">🧾</div><div class="et"><div class="t">Enviar extrato</div><div class="s">Empresa · Depósitos · Pessoal — eu leio e categorizo'+(nInbxNovos>0?(' · '+nInbxNovos+' na fila'):'')+'</div></div><div class="ec">›</div></button>';
     h+='<div class="card saldocard pj"><div class="k"><span class="dot pj"></span>Conta Empresa (Gehlen\'s)</div><div class="big num">'+(sPJ===null?"—":money(sPJ))+'</div>'+(sPJ!==null?'<div class="prev '+((sPJ-pendPJ)<0?"neg":"muted")+'">Previsão após contas: <b class="num">'+money(sPJ-pendPJ)+'</b></div>':'')+((atrasEmp>0||ceEmp>0)?('<div class="prev neg" style="font-size:11px;margin-top:3px">⚠ Atrasados <b class="num">'+money(atrasEmp)+'</b> · Cheque especial <b class="num">'+money(ceEmp)+'</b></div>'):'')+'</div>';
     h+='<div class="card saldocard pf"><div class="k"><span class="dot pf"></span>Conta Pessoal</div><div class="big num">'+(sPF===null?"—":money(sPF))+'</div>'+(sPF!==null?'<div class="prev '+((sPF-pendPF)<0?"neg":"muted")+'">Previsão após contas: <b class="num">'+money(sPF-pendPF)+'</b></div>':'<div class="prev muted">Conta a definir</div>')+'</div>';
+    // Balanço real = dinheiro em conta − cheque especial
+    (function(){var ceB=chequeEspecialTotal();var _sj=(sPJ===null?0:sPJ),_sf=(sPF===null?0:sPF),emConta=_sj+_sf,balR=emConta-ceB,ok=balR>=0;var cor=ok?"var(--good)":"var(--bad)";
+      h+='<div class="card saldocard" style="border-left:3px solid '+cor+'"><div class="k"><span class="dot" style="background:'+cor+'"></span>Balanço real</div>'
+        +'<div class="big num '+(ok?"lucrotxt":"neg")+'">'+(ok?money(balR):"− "+money(-balR))+'</div>'
+        +'<div class="prev muted" style="font-size:11px">'+(ok?"No lucro 🟢":"No prejuízo 🔴")+' · dinheiro em conta '+money(emConta)+' − cheque especial '+money(ceB)+'</div></div>';
+    })();
     // Negativo (cheque especial) por banco
     if(S.dividas){var BANKN={sicoob:"Sicoob",caixa:"Caixa",cresol:"Cresol"};var dk=Object.keys(S.dividas).filter(function(k){return k!=="total"&&k!=="atualizado"&&(+S.dividas[k])>0;});
       if(dk.length){h+='<div class="card pad"><div class="label" style="margin-bottom:9px">Negativo por banco · cheque especial</div>';
@@ -370,6 +381,26 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
       '<div class="metatop"><div class="metapct '+(pct>=100?"lucrotxt":"")+'">'+Math.round(pct)+'%</div><div style="text-align:right"><div class="num" style="font-weight:600">'+money(fat)+'</div><div class="muted" style="font-size:11.5px">de '+money(meta)+'</div></div></div>'+
       '<div class="metabar"><div class="fill'+(pct>=100?" full":"")+'" style="width:'+fillPct+'%"></div>'+(overPct>0?'<div class="over" style="width:'+overPct+'%"></div>':'')+'</div>'+
       '<div class="metafoot">'+(pct>=100?('<span class="lucrotxt"><b>Zona de lucro!</b> Sobrou '+money(lucro)+' depois de todas as contas.</span>'):('Faltam <b>'+money(meta-fat)+'</b> pra fechar o mês no zero a zero.'))+(atrasOutros>0?'<br><span class="neg">Inclui '+money(atrasOutros)+' de contas atrasadas de meses anteriores.</span>':'')+'</div></div>';
+    (function(){ if(!(meta>0))return;
+      var ym=S.mesSel,y=+ym.slice(0,4),mo=+ym.slice(5,7);var diasMes=new Date(y,mo,0).getDate();
+      var atu=(S.saldos&&S.saldos.atualizado)?String(S.saldos.atualizado):"";var diaRef=0,dlabel="";
+      if(atu.length>=10&&atu.slice(0,7)===ym){diaRef=parseInt(atu.slice(8,10),10)||0;dlabel=atu.slice(8,10)+"/"+atu.slice(5,7);}
+      if(!diaRef){var hj=new Date();if((hj.getFullYear()+"-"+("0"+(hj.getMonth()+1)).slice(-2))===ym){diaRef=hj.getDate();dlabel=("0"+hj.getDate()).slice(-2)+"/"+("0"+(hj.getMonth()+1)).slice(-2);}else{diaRef=diasMes;dlabel="fim";}}
+      if(diaRef<1)diaRef=1;
+      var mediaNec=meta/diasMes,esperado=mediaNec*diaRef,diff=fat-esperado,minhaMedia=fat/diaRef,acima=diff>=0;
+      var pctR=esperado>0?Math.round(fat/esperado*100):100,fillW=Math.max(3,Math.min(100,pctR));
+      var cor=acima?"var(--good)":"var(--bad)",ic=acima?"▲":"▼",tit=acima?"Acima do ritmo":"Abaixo do ritmo";
+      var frase=acima?('Você está <b>'+money(diff)+'</b> à frente da média necessária.'):('Faltam <b>'+money(-diff)+'</b> pra chegar na média do mês.');
+      h+='<div class="card" style="border-left:3px solid '+cor+'"><div class="label">Ritmo da meta · até '+dlabel+'</div>'
+        +'<div style="display:flex;align-items:baseline;justify-content:space-between;margin:2px 0 8px"><div style="font-family:var(--f-disp);font-weight:700;font-size:18px;color:'+cor+'">'+ic+' '+tit+'</div><div style="font-family:var(--f-disp);font-weight:700;font-size:22px;color:'+cor+'">'+pctR+'%</div></div>'
+        +'<div style="height:12px;border-radius:999px;background:var(--line);overflow:hidden"><div style="height:100%;width:'+fillW+'%;background:'+cor+';border-radius:999px"></div></div>'
+        +'<div style="text-align:center;font-size:10px;color:var(--muted);margin:4px 0 10px">100% = ritmo certo pra fechar o mês no zero a zero</div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0"><span class="muted">Esperado até dia '+diaRef+'</span><span class="num">'+money(esperado)+'</span></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0"><span class="muted">Faturado até agora</span><span class="num pos">'+money(fat)+'</span></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0 0;border-top:1px solid var(--line);margin-top:4px"><span class="muted">Meta por dia</span><span class="num">'+money(mediaNec)+'</span></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0"><span class="muted">Sua média por dia</span><span class="num" style="color:'+cor+'">'+money(minhaMedia)+'</span></div>'
+        +'<div class="metafoot" style="margin-top:8px">'+frase+'</div></div>';
+    })();
     var fatCanais=CATS.filter(function(c){return c.grp==="fat";});
     h+='<details class="card"><summary class="fatsum"><div><div class="muted" style="font-size:12px;font-weight:600">Faturamento recebido</div><div class="v num pos">'+money(fat)+'</div></div><span class="caret">▸</span></summary><div style="border-top:1px solid var(--line)">';
     var det="";fatCanais.forEach(function(c){var v=lancMes().reduce(function(a,l){return (l.tipo==="entrada"&&l.categoria===c.id&&l.status!=="revisar")?a+(+l.valor||0):a;},0);if(v>0)det+='<div class="rowitem"><div class="ic">'+c.ic+'</div><div class="mid"><div class="t">'+c.label+'</div></div><div class="val num">'+money(v)+'</div></div>';});
@@ -519,7 +550,6 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
     var host=el("v-lucro");if(!S.ready){host.innerHTML=loadingCard();return;}
     var h=dbBanner();
     var ym=S.mesSel,mhoje=mesHoje(),fechado=isFechado(ym);
-    var meta=metaMes(ym),fat=fatMes(ym),lucro=fat-meta;
     if(ym<BASE_LUCRO){
       h+='<div class="card pad"><div class="label">Lucro do mês · '+mesNome(ym)+'</div><div class="muted" style="font-size:13px;margin-top:8px">O controle de lucro começa em '+mesNome(BASE_LUCRO)+'. Meses anteriores não entram.</div></div>';
       host.innerHTML=h;return;
@@ -531,28 +561,47 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
         '<div class="muted" style="font-size:13px;margin-top:6px">Mês ainda não fechado. O lucro só aparece quando o caixa for fechado — sem simulação de meses futuros.</div></div>';
       host.innerHTML=h;return;
     }
+    var snap=snapsObj()[ym];
+    var fat=(fechado&&snap)?(+snap.fat||0):fatMes(ym);
+    var desp=(fechado&&snap)?(+snap.desp||0):despTotMes(ym);
+    var oper=fat-desp;
+    var caixa=(fechado&&snap)?(+snap.caixa||0):saldosEmConta();
+    var ce=(fechado&&snap)?(+snap.ce||0):chequeEspecialTotal();
+    var pos=caixa-ce;var posOk=pos>=0;
     var statusTag=fechado?'<span class="pill pago" style="margin-left:8px">caixa fechado</span>':'<span class="pill pendente" style="margin-left:8px">em aberto</span>';
-    h+='<div class="card pad"><div class="label">Lucro do mês · '+mesNome(ym)+statusTag+'</div><div class="num '+(lucro>=0?"lucrotxt":"neg")+'" style="font-family:var(--f-disp);font-weight:600;font-size:34px;margin-top:6px">'+money(lucro)+'</div>'+
-      '<div class="muted" style="font-size:12.5px;margin-top:6px">'+(fechado?(lucro>=0?'Lucro apurado do mês fechado (faturamento − todas as contas).':'Fechou no vermelho: faltou isso pra cobrir as contas.'):'Parcial — o caixa ainda está aberto. Vai mudar até o fechamento.')+'</div>'+
+    h+='<div class="card pad"><div class="label">Resultado do mês · '+mesNome(ym)+statusTag+'</div>'+
+      '<div class="num '+(posOk?"lucrotxt":"neg")+'" style="font-family:var(--f-disp);font-weight:600;font-size:34px;margin-top:6px">'+(posOk?money(pos):"− "+money(-pos))+'</div>'+
+      '<div class="muted" style="font-size:12.5px;margin-top:6px">'+(posOk?'🟢 No positivo: você tem mais em caixa do que deve.':'🔴 No vermelho: ainda há cheque especial a cobrir, mesmo com saldo em conta.')+'</div>'+
       '<div style="margin-top:12px;display:flex;flex-direction:column;gap:7px;font-size:14px">'+
-        '<div style="display:flex;justify-content:space-between"><span class="muted">Faturamento recebido</span><span class="num pos">'+money(fat)+'</span></div>'+
-        '<div style="display:flex;justify-content:space-between"><span class="muted">(−) Meta (contas + atrasadas)</span><span class="num">'+money(meta)+'</span></div>'+
-        '<div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:7px"><span style="font-weight:600">= Lucro do mês</span><span class="num '+(lucro>=0?"lucrotxt":"neg")+'" style="font-weight:600">'+money(lucro)+'</span></div></div>'+
+        '<div style="display:flex;justify-content:space-between"><span class="muted">Dinheiro em conta</span><span class="num pos">'+money(caixa)+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between"><span class="muted">(−) Cheque especial / dívidas</span><span class="num neg">'+money(ce)+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:7px"><span style="font-weight:600">= Posição real</span><span class="num '+(posOk?"lucrotxt":"neg")+'" style="font-weight:600">'+(posOk?money(pos):"− "+money(-pos))+'</span></div></div>'+
       '<button class="btn" id="fecharBtn" style="margin-top:14px;background:'+(fechado?'var(--surface2);color:var(--muted)':'var(--accent);color:var(--on-accent)')+'">'+(fechado?'Reabrir caixa de '+mesCurto(ym):'Fechar caixa de '+mesCurto(ym))+'</button></div>';
-    h+='<div class="banner" style="background:var(--surface2);border-color:var(--line)">Cálculo isolado: só entradas e contas DESTE mês. Não acumula o que sobrou de meses anteriores.</div>';
-    // histórico: só meses FECHADOS
+    h+='<div class="card pad"><div class="label">Operação do mês</div>'+
+      '<div class="num '+(oper>=0?"lucrotxt":"neg")+'" style="font-family:var(--f-disp);font-weight:600;font-size:26px;margin-top:4px">'+money(oper)+'</div>'+
+      '<div class="muted" style="font-size:12px;margin-top:4px">'+(oper>=0?'A barbearia faturou mais do que gastou no mês.':'As contas do mês passaram do faturamento.')+' (pró-labore já conta como despesa)</div>'+
+      '<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;font-size:14px">'+
+        '<div style="display:flex;justify-content:space-between"><span class="muted">Faturamento</span><span class="num pos">'+money(fat)+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between"><span class="muted">(−) Despesas (contas + pró-labore)</span><span class="num">'+money(desp)+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:6px"><span style="font-weight:600">= Operação</span><span class="num '+(oper>=0?"lucrotxt":"neg")+'" style="font-weight:600">'+money(oper)+'</span></div></div></div>';
+    if(!fechado){h+='<div class="banner" style="background:var(--surface2);border-color:var(--line)">Parcial — o caixa ainda está aberto. Quando fechar (ou quando eu receber o extrato do mês), eu travo esse resultado no histórico.</div>';}
     var fl=fechadosArr().filter(function(m){return m>=BASE_LUCRO;}).sort().reverse();
     h+='<div class="label" style="margin:6px 2px -2px">Meses fechados</div>';
     if(fl.length){h+='<div class="card">';
-      fl.forEach(function(m){var lu=lucroMes(m);h+='<div class="rowitem"><div class="mid"><div class="t">'+mesCurto(m)+'</div><div class="s">faturou '+money(fatMes(m))+'</div></div><div style="text-align:right"><div class="val num '+(lu>=0?"lucrotxt":"neg")+'">'+money(lu)+'</div><div class="s">'+(lu>=0?"lucro":"prejuízo")+'</div></div></div>';});h+='</div>';}
+      fl.forEach(function(m){var sp=snapsObj()[m];var p=sp?(+sp.pos||0):(saldosEmConta()-chequeEspecialTotal());var op=sp?(+sp.oper||0):(fatMes(m)-despTotMes(m));var pok=p>=0;
+        h+='<div class="rowitem"><div class="mid"><div class="t">'+mesCurto(m)+'</div><div class="s">operação '+money(op)+'</div></div><div style="text-align:right"><div class="val num '+(pok?"lucrotxt":"neg")+'">'+(pok?money(p):"− "+money(-p))+'</div><div class="s">'+(pok?"positivo":"no vermelho")+'</div></div></div>';});
+      h+='</div>';}
     else{h+='<div class="card pad empty">Nenhum mês fechado ainda. Feche o caixa de outubro quando o mês acabar (ou quando me mandar o extrato).</div>';}
     host.innerHTML=h;
     var fb=el("fecharBtn");if(fb)fb.addEventListener("click",function(){toggleFechado(ym);});
   }
   function toggleFechado(ym){if(!S.db)return;var arr=fechadosArr().slice();var i=arr.indexOf(ym);
-    if(i>=0){arr.splice(i,1);toast("Caixa reaberto");}else{arr.push(ym);toast("Caixa fechado ✓");}
-    S.lucroCfg=S.lucroCfg||{};S.lucroCfg.fechados=arr;render();
-    S.db.doc("config/lucro").set({fechados:arr}).catch(function(){toast("Erro ao salvar fechamento");});}
+    var snaps=snapsObj();var ns={};for(var k in snaps){ns[k]=snaps[k];}
+    if(i>=0){arr.splice(i,1);delete ns[ym];toast("Caixa reaberto");}
+    else{arr.push(ym);var fat=fatMes(ym),desp=despTotMes(ym),caixa=saldosEmConta(),ce=chequeEspecialTotal();
+      ns[ym]={fat:fat,desp:desp,oper:fat-desp,caixa:caixa,ce:ce,pos:caixa-ce,data:(S.saldos&&S.saldos.atualizado)||""};toast("Caixa fechado ✓");}
+    S.lucroCfg=S.lucroCfg||{};S.lucroCfg.fechados=arr;S.lucroCfg.snaps=ns;render();
+    S.db.doc("config/lucro").set({fechados:arr,snaps:ns}).catch(function(){toast("Erro ao salvar fechamento");});}
 
   // ---- EXTRATOS ----
   var pendingExtTipo=null;
