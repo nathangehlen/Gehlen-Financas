@@ -185,7 +185,7 @@
     <input id="lg-pass" class="inp" type="password" autocomplete="current-password" placeholder="Senha">
     <div id="lg-err" class="gateerr"></div>
     <button id="lg-btn" class="btn">Entrar</button>
-    <div class="gatever">versão v38 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
+    <div class="gatever">versão v40 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
   </div>
 </div>
 
@@ -288,7 +288,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function autodetect(desc){var d=" "+norm(desc.toLowerCase())+" ";for(var i=0;i<CATS.length;i++){var c=CATS[i];for(var j=0;j<c.kw.length;j++){if(d.indexOf(norm(c.kw[j]))>=0)return c;}}return null;}
   function parseValor(txt){var m=txt.replace(/\./g,"").match(/(\d+(?:,\d{1,2})?)/);return m?parseFloat(m[1].replace(",",".")):null;}
 
-  var VERSION="v38";
+  var VERSION="v40";
   var S={db:null,user:null,lanc:[],contas:[],inbox:[],regras:[],dividas:null,saldos:null,metas:null,lucroCfg:null,assetsCap:null,ready:false,cur:"painel",mesSel:"2026-10",loadErr:null,loaded:false};
   var BASE_LUCRO="2026-10";
   function mesHoje(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
@@ -391,6 +391,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
       if(!diaRef){var hj=new Date();if((hj.getFullYear()+"-"+("0"+(hj.getMonth()+1)).slice(-2))===ym){diaRef=hj.getDate();dlabel=("0"+hj.getDate()).slice(-2)+"/"+("0"+(hj.getMonth()+1)).slice(-2);}else{diaRef=diasMes;dlabel="fim";}}
       if(diaRef<1)diaRef=1;
       var mediaNec=meta/diasMes,esperado=mediaNec*diaRef,diff=fat-esperado,minhaMedia=fat/diaRef,acima=diff>=0;
+      var projMes=diaRef>0?(fat/diaRef)*diasMes:0;
       var pctR=esperado>0?Math.round(fat/esperado*100):100,fillW=Math.max(3,Math.min(100,pctR));
       var cor=acima?"var(--good)":"var(--bad)",ic=acima?"▲":"▼",tit=acima?"Acima do ritmo":"Abaixo do ritmo";
       var frase=acima?('Você está <b>'+money(diff)+'</b> à frente da média necessária.'):('Faltam <b>'+money(-diff)+'</b> pra chegar na média do mês.');
@@ -402,7 +403,8 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
         +'<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0"><span class="muted">Faturado até agora</span><span class="num pos">'+money(fat)+'</span></div>'
         +'<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0 0;border-top:1px solid var(--line);margin-top:4px"><span class="muted">Meta por dia</span><span class="num">'+money(mediaNec)+'</span></div>'
         +'<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0"><span class="muted">Sua média por dia</span><span class="num" style="color:'+cor+'">'+money(minhaMedia)+'</span></div>'
-        +'<div class="metafoot" style="margin-top:8px">'+frase+'</div></div>';
+        +'<div class="metafoot" style="margin-top:8px">'+frase+'</div>'
+        +'<div class="metafoot" style="margin-top:4px;font-size:11px;opacity:.9">Mantendo essa média, você fecha '+mesCurto(ym)+' com <b>~'+money(projMes)+'</b>'+(meta>0?(projMes>=meta?(' — <span class="lucrotxt">'+money(projMes-meta)+' acima da meta</span>'):(' — <span class="neg">'+money(meta-projMes)+' abaixo da meta</span>')):'')+'</div></div>';
     })();
     var fatCanais=CATS.filter(function(c){return c.grp==="fat";});
     h+='<details class="card"><summary class="fatsum"><div><div class="muted" style="font-size:12px;font-weight:600">Faturamento recebido</div><div class="v num pos">'+money(fat)+'</div></div><span class="caret">▸</span></summary><div style="border-top:1px solid var(--line)">';
@@ -436,7 +438,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function rowMini(c){var cl=c.classe||"PJ";var st=statusEf(c);return '<div class="rowitem"><div class="ic">'+catIc(c.categoria)+'</div><div class="mid"><div class="t">'+esc(c.desc)+estim(c)+'</div><div class="s">'+(c.dia?("dia "+c.dia+" · "):"")+'<span class="tagcls '+cl+'">'+cl+'</span>'+(c.categoria==="prolabore"?' · falta':'')+'</div></div><div style="text-align:right"><div class="val num">'+money(vef(c))+'</div><div style="margin-top:3px"><span class="pill '+st+'">'+st+'</span></div></div></div>';}
 
   // ---- PESSOAL ----
-  var tetoTimer=null, pfEditId=null, pfAdding=false, triEditId=null, triNewCat=false;
+  var tetoTimer=null, pfEditId=null, pfAdding=false, triEditId=null, triNewCat=false, pfOpenCat=null;
   var PROLAB=6000;
   function renderPessoal(){
     var host=el("v-pessoal");if(!S.ready){host.innerHTML=loadingCard();return;}
@@ -450,8 +452,11 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
     h+='<div class="muted" style="font-size:11.5px;margin:0 2px 6px">Teto do variável = '+money(vTeto)+' (R$ 6.000 − fixas de '+money(fxM)+'). Os tetos se ajustam sozinhos quando as fixas mudam. O número que você edita é a sua base.</div>';
     h+='<div class="card pad" style="display:flex;flex-direction:column;gap:18px">';
     varCats.forEach(function(c){var g=somaSaidaPF(c.id),stored=c.teto||0,tef=stored*scale;var pctb=tef>0?Math.min(100,g/tef*100):(g>0?100:0);var cls=tef>0&&g>tef?"ov":(tef>0&&g>=tef*0.85?"near":"");var rest=tef-g;
-      h+='<div class="catrow"><div class="top"><span style="font-weight:600">'+c.ic+' '+c.label+'</span><span class="num muted" style="font-size:13px">'+money(g)+' / '+money(tef)+'</span></div>'+
+      var items=lancMes().filter(function(l){return l.tipo==="saida"&&l.classe==="PF"&&l.categoria===c.id&&l.status!=="revisar";}).sort(function(a,b){return (a.data||"")<(b.data||"")?1:-1;});
+      var open=(pfOpenCat===c.id);
+      h+='<div class="catrow"><div class="top" data-catview="'+c.id+'" style="cursor:pointer;align-items:center"><span style="font-weight:600">'+c.ic+' '+c.label+' <span class="muted" style="font-size:11px;font-weight:400">'+(open?"▾":"▸")+(items.length?(" "+items.length):"")+'</span></span><span class="num muted" style="font-size:13px">'+money(g)+' / '+money(tef)+'</span></div>'+
         '<div class="bar '+cls+'"><i style="width:'+pctb+'%"></i></div>'+
+        (open?('<div style="margin-top:9px;border-top:1px solid var(--line);padding-top:3px">'+(items.length?items.map(function(l){return '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:13px"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.desc||"—")+'<span class="muted" style="font-size:11px">'+(l.data?("  ·  "+l.data.slice(8,10)+"/"+l.data.slice(5,7)):"")+'</span></span><span class="num neg" style="flex:none">'+money(l.valor)+'</span></div>';}).join(""):'<div class="muted" style="font-size:12.5px;padding:5px 0">Nada gasto nesta categoria no mês.</div>')+'</div>'):'')+
         '<div class="steppers"><button class="step" data-m="'+c.id+'">−</button><input class="tetoinp num" type="number" inputmode="numeric" data-cat="'+c.id+'" value="'+stored+'"><button class="step" data-p="'+c.id+'">＋</button>'+
           '<span class="steplab '+(rest<0?"neg":"muted")+'">'+(rest<0?('passou '+money(-rest)):('resta '+money(rest)))+'</span></div></div>';});
     h+='</div>';
@@ -477,6 +482,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
     host.querySelectorAll("[data-m]").forEach(function(b){b.addEventListener("click",function(){bumpTeto(b.getAttribute("data-m"),-25);});});
     host.querySelectorAll("[data-p]").forEach(function(b){b.addEventListener("click",function(){bumpTeto(b.getAttribute("data-p"),25);});});
     host.querySelectorAll(".tetoinp").forEach(function(inp){inp.addEventListener("change",function(){setTeto(inp.getAttribute("data-cat"),parseFloat(inp.value)||0);});});
+    host.querySelectorAll("[data-catview]").forEach(function(b){b.addEventListener("click",function(){var k=b.getAttribute("data-catview");pfOpenCat=(pfOpenCat===k)?null:k;renderPessoal();});});
     host.querySelectorAll("[data-pay]").forEach(function(b){b.addEventListener("click",function(){togglePago(b.getAttribute("data-pay"));});});
     host.querySelectorAll("[data-edit]").forEach(function(b){b.addEventListener("click",function(){pfEditId=b.getAttribute("data-edit");pfAdding=false;renderPessoal();});});
     host.querySelectorAll("[data-cancelp]").forEach(function(b){b.addEventListener("click",function(){pfEditId=null;renderPessoal();});});
