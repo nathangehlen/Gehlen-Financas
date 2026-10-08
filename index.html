@@ -185,7 +185,7 @@
     <input id="lg-pass" class="inp" type="password" autocomplete="current-password" placeholder="Senha">
     <div id="lg-err" class="gateerr"></div>
     <button id="lg-btn" class="btn">Entrar</button>
-    <div class="gatever">versão v43 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
+    <div class="gatever">versão v44 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
   </div>
 </div>
 
@@ -288,7 +288,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function autodetect(desc){var d=" "+norm(desc.toLowerCase())+" ";for(var i=0;i<CATS.length;i++){var c=CATS[i];for(var j=0;j<c.kw.length;j++){if(d.indexOf(norm(c.kw[j]))>=0)return c;}}return null;}
   function parseValor(txt){var m=txt.replace(/\./g,"").match(/(\d+(?:,\d{1,2})?)/);return m?parseFloat(m[1].replace(",",".")):null;}
 
-  var VERSION="v43";
+  var VERSION="v44";
   var S={db:null,user:null,lanc:[],contas:[],inbox:[],regras:[],dividas:null,saldos:null,metas:null,lucroCfg:null,assetsCap:null,ready:false,cur:"painel",mesSel:"2026-10",loadErr:null,loaded:false};
   var BASE_LUCRO="2026-10";
   function mesHoje(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
@@ -317,6 +317,8 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   // ---- cálculos ----
   function inMeta(c){return c.classe==="PJ"||c.categoria==="prolabore";}
   function isPFpess(c){return c.classe==="PF"&&c.categoria!=="prolabore";}
+  function atrasPJ(ym){ym=ym||S.mesSel;return S.contas.reduce(function(a,c){return (inMeta(c)&&c.status!=="pago"&&(c.status==="atrasado"||c.mes<ym))?a+(+c.valor||0):a;},0);}
+  function metaMesSo(ym){return metaMes(ym)-atrasPJ(ym);}
   function lancMes(ym){ym=ym||S.mesSel;return S.lanc.filter(function(l){return l.mes===ym;});}
   function contasMes(ym){ym=ym||S.mesSel;return S.contas.filter(function(c){return c.mes===ym;});}
   function somaEntradas(ym){return lancMes(ym).reduce(function(a,l){return (l.tipo==="entrada"&&l.status!=="revisar"&&l.categoria!=="transferencia")?a+(+l.valor||0):a;},0);}
@@ -358,7 +360,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
     var cm=contasMes();
     var pendPJ=cm.filter(function(c){return inMeta(c)&&statusEf(c)!=="pago";}).reduce(function(a,c){return a+vef(c);},0);
     var pendPF=cm.filter(function(c){return isPFpess(c)&&c.status!=="pago";}).reduce(function(a,c){return a+(+c.valor||0);},0);
-    var meta=metaMes(),fat=fatMes(),pct=meta>0?(fat/meta*100):0,lucro=fat-meta;
+    var metaFull=metaMes(),meta=metaMesSo(),fat=fatMes(),pct=meta>0?(fat/meta*100):0,lucro=fat-meta;
     var atrasOutros=S.contas.filter(function(c){return inMeta(c)&&c.mes<S.mesSel&&c.status!=="pago";}).reduce(function(a,c){return a+(+c.valor||0);},0);
     var atrasEmp=S.contas.filter(function(c){return inMeta(c)&&c.status!=="pago"&&(c.status==="atrasado"||c.mes<S.mesSel);}).reduce(function(a,c){return a+(+c.valor||0);},0);
     var ceEmp=chequeEspecialTotal();
@@ -384,6 +386,12 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
       '<div class="metatop"><div class="metapct '+(pct>=100?"lucrotxt":"")+'">'+Math.round(pct)+'%</div><div style="text-align:right"><div class="num" style="font-weight:600">'+money(fat)+'</div><div class="muted" style="font-size:11.5px">de '+money(meta)+'</div></div></div>'+
       '<div class="metabar"><div class="fill'+(pct>=100?" full":"")+'" style="width:'+fillPct+'%"></div>'+(overPct>0?'<div class="over" style="width:'+overPct+'%"></div>':'')+'</div>'+
       '<div class="metafoot">'+(pct>=100?('<span class="lucrotxt"><b>Zona de lucro!</b> Sobrou '+money(lucro)+' depois de todas as contas.</span>'):('Faltam <b>'+money(meta-fat)+'</b> pra fechar o mês no zero a zero.'))+(atrasOutros>0?'<br><span class="neg">Inclui '+money(atrasOutros)+' de contas atrasadas de meses anteriores.</span>':'')+'</div></div>';
+    (function(){var cheque=chequeEspecialTotal(),atras=atrasPJ();var meta2=metaFull+cheque,pct2=meta2>0?(fat/meta2*100):0,fill2=Math.min(100,pct2),over2=Math.max(0,Math.min(60,pct2-100));
+      h+='<div class="card metacard" style="border:1px solid var(--accent-45)"><div class="label">Meta pra zerar TUDO · '+mesNome(S.mesSel)+'</div>'+
+        '<div class="metatop"><div class="metapct '+(pct2>=100?"lucrotxt":"")+'">'+Math.round(pct2)+'%</div><div style="text-align:right"><div class="num" style="font-weight:600">'+money(fat)+'</div><div class="muted" style="font-size:11.5px">de '+money(meta2)+'</div></div></div>'+
+        '<div class="metabar"><div class="fill'+(pct2>=100?" full":"")+'" style="width:'+fill2+'%"></div>'+(over2>0?'<div class="over" style="width:'+over2+'%"></div>':'')+'</div>'+
+        '<div class="metafoot">'+(pct2>=100?('<span class="lucrotxt"><b>Zerou tudo!</b> Mês + atrasadas + cheque especial quitados.</span>'):('Faltam <b>'+money(meta2-fat)+'</b> pra fechar o mês E zerar o que ficou pra trás.<br><span class="muted" style="font-size:11px">Inclui atrasadas '+money(atras)+' + cheque especial/empréstimos '+money(cheque)+'.</span>'))+'</div></div>';
+    })();
     (function(){ if(!(meta>0))return;
       var ym=S.mesSel,y=+ym.slice(0,4),mo=+ym.slice(5,7);var diasMes=new Date(y,mo,0).getDate();
       var atu=(S.saldos&&S.saldos.atualizado)?String(S.saldos.atualizado):"";var diaRef=0,dlabel="";
