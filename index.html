@@ -185,7 +185,7 @@
     <input id="lg-pass" class="inp" type="password" autocomplete="current-password" placeholder="Senha">
     <div id="lg-err" class="gateerr"></div>
     <button id="lg-btn" class="btn">Entrar</button>
-    <div class="gatever">versão v41 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
+    <div class="gatever">versão v42 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
   </div>
 </div>
 
@@ -288,7 +288,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function autodetect(desc){var d=" "+norm(desc.toLowerCase())+" ";for(var i=0;i<CATS.length;i++){var c=CATS[i];for(var j=0;j<c.kw.length;j++){if(d.indexOf(norm(c.kw[j]))>=0)return c;}}return null;}
   function parseValor(txt){var m=txt.replace(/\./g,"").match(/(\d+(?:,\d{1,2})?)/);return m?parseFloat(m[1].replace(",",".")):null;}
 
-  var VERSION="v41";
+  var VERSION="v42";
   var S={db:null,user:null,lanc:[],contas:[],inbox:[],regras:[],dividas:null,saldos:null,metas:null,lucroCfg:null,assetsCap:null,ready:false,cur:"painel",mesSel:"2026-10",loadErr:null,loaded:false};
   var BASE_LUCRO="2026-10";
   function mesHoje(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
