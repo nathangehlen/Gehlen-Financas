@@ -185,7 +185,7 @@
     <input id="lg-pass" class="inp" type="password" autocomplete="current-password" placeholder="Senha">
     <div id="lg-err" class="gateerr"></div>
     <button id="lg-btn" class="btn">Entrar</button>
-    <div class="gatever">versão v46 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
+    <div class="gatever">versão v47 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
   </div>
 </div>
 
@@ -289,7 +289,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function autodetect(desc){var d=" "+norm(desc.toLowerCase())+" ";for(var i=0;i<CATS.length;i++){var c=CATS[i];for(var j=0;j<c.kw.length;j++){if(d.indexOf(norm(c.kw[j]))>=0)return c;}}return null;}
   function parseValor(txt){var m=txt.replace(/\./g,"").match(/(\d+(?:,\d{1,2})?)/);return m?parseFloat(m[1].replace(",",".")):null;}
 
-  var VERSION="v46";
+  var VERSION="v47";
   var S={db:null,user:null,lanc:[],contas:[],inbox:[],regras:[],dividas:null,saldos:null,metas:null,lucroCfg:null,assetsCap:null,ready:false,cur:"painel",mesSel:"2026-10",loadErr:null,loaded:false};
   var BASE_LUCRO="2026-10";
   function mesHoje(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
@@ -297,7 +297,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function isFechado(ym){return fechadosArr().indexOf(ym)>=0;}
   function chequeEspecialTotal(){if(!S.dividas)return 0;var t=0;for(var k in S.dividas){if(k==="total"||k==="atualizado")continue;var v=+S.dividas[k]||0;if(v>0)t+=v;}return t;}
   function saldosEmConta(){var j=(S.saldos&&S.saldos.pj!=null)?(+S.saldos.pj||0):0;var f=(S.saldos&&S.saldos.pf!=null)?(+S.saldos.pf||0):0;return j+f;}
-  function despVarMes(ym){return lancMes(ym).reduce(function(a,l){return (l.tipo==="saida"&&l.status!=="revisar"&&l.classe!=="PF"&&l.categoria!=="prolabore"&&l.categoria!=="transferencia")?a+(+l.valor||0):a;},0);}
+  function despVarMes(ym){ym=ym||S.mesSel;var comConta={};(S.contas||[]).forEach(function(c){if(c&&c.mes===ym)comConta[c.categoria]=true;});return lancMes(ym).reduce(function(a,l){if(l.tipo!=="saida"||l.status==="revisar"||l.classe==="PF"||l.categoria==="prolabore"||l.categoria==="transferencia")return a;if(comConta[l.categoria])return a;/* categoria ja contada via conta -> nao duplicar */return a+(+l.valor||0);},0);}
   function despTotMes(ym){return metaMes(ym)+despVarMes(ym);}
   function snapsObj(){return (S.lucroCfg&&S.lucroCfg.snaps&&typeof S.lucroCfg.snaps==="object")?S.lucroCfg.snaps:{};}
 
