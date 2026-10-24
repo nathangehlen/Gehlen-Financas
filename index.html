@@ -185,7 +185,7 @@
     <input id="lg-pass" class="inp" type="password" autocomplete="current-password" placeholder="Senha">
     <div id="lg-err" class="gateerr"></div>
     <button id="lg-btn" class="btn">Entrar</button>
-    <div class="gatever">versão v47 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
+    <div class="gatever">versão v48 · <a href="?reset=1" class="gatereset">limpar cache</a></div>
   </div>
 </div>
 
@@ -289,7 +289,7 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
   function autodetect(desc){var d=" "+norm(desc.toLowerCase())+" ";for(var i=0;i<CATS.length;i++){var c=CATS[i];for(var j=0;j<c.kw.length;j++){if(d.indexOf(norm(c.kw[j]))>=0)return c;}}return null;}
   function parseValor(txt){var m=txt.replace(/\./g,"").match(/(\d+(?:,\d{1,2})?)/);return m?parseFloat(m[1].replace(",",".")):null;}
 
-  var VERSION="v47";
+  var VERSION="v48";
   var S={db:null,user:null,lanc:[],contas:[],inbox:[],regras:[],dividas:null,saldos:null,metas:null,lucroCfg:null,assetsCap:null,ready:false,cur:"painel",mesSel:"2026-10",loadErr:null,loaded:false};
   var BASE_LUCRO="2026-10";
   function mesHoje(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
@@ -478,21 +478,24 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
     var host=el("v-pessoal");if(!S.ready){host.innerHTML=loadingCard();return;}
     var varCats=CATS.filter(function(c){return c.classe==="PF"&&typeof c.teto==="number";});
     var vTeto=variavelTeto(),fxM=fixasMes();
-    var somaStored=varCats.reduce(function(a,c){return a+(c.teto||0);},0);
-    var scale=somaStored>0?vTeto/somaStored:0;
+    var somaTeto=varCats.reduce(function(a,c){return a+(c.teto||0);},0);
+    var dispo=vTeto-somaTeto;
     var gastoTotal=varCats.reduce(function(a,c){return a+somaSaidaPF(c.id);},0);
+    var _over=0,_totSurp=0,_surp={};
+    varCats.forEach(function(c){var t=c.teto||0,g=somaSaidaPF(c.id),d=t-g;if(d<0){_over+=-d;}else{_surp[c.id]=d;_totSurp+=d;}});
+    function effLim(c){var t=c.teto||0,g=somaSaidaPF(c.id);if(g>t)return t;var cut=_totSurp>0?_over*((_surp[c.id]||0)/_totSurp):0;return Math.max(g,t-cut);}
     var h=dbBanner();
     h+='<div class="label" style="margin:2px 2px 0">Orçamento variável · '+mesNome(S.mesSel)+'</div>';
-    h+='<div class="muted" style="font-size:11.5px;margin:0 2px 6px">Teto do variável = '+money(vTeto)+' (R$ 6.000 − fixas de '+money(fxM)+'). Os tetos se ajustam sozinhos quando as fixas mudam. O número que você edita é a sua base.</div>';
+    h+='<div class="muted" style="font-size:11.5px;margin:0 2px 6px">Total do mês = '+money(vTeto)+' (R$ 6.000 − fixas de '+money(fxM)+'). Alocado '+money(somaTeto)+' · <b class="'+(dispo<-0.005?"neg":"")+'">'+(dispo<-0.005?('passou '+money(-dispo)):('livre pra alocar '+money(dispo)))+'</b>. Estourar numa categoria reduz o limite das outras; o total nunca passa dos '+money(vTeto)+'.</div>';
     h+='<div class="card pad" style="display:flex;flex-direction:column;gap:18px">';
-    varCats.forEach(function(c){var g=somaSaidaPF(c.id),stored=c.teto||0,tef=stored*scale;var pctb=tef>0?Math.min(100,g/tef*100):(g>0?100:0);var cls=tef>0&&g>tef?"ov":(tef>0&&g>=tef*0.85?"near":"");var rest=tef-g;
+    varCats.forEach(function(c){var g=somaSaidaPF(c.id),base=c.teto||0,lim=effLim(c);var estou=g>base+0.005;var pctb=lim>0?Math.min(100,g/lim*100):(g>0?100:0);if(estou)pctb=100;var cls=estou?"ov":(lim>0&&g>=lim*0.85?"near":"");var rest=lim-g;var reduz=base-lim;
       var items=lancMes().filter(function(l){return l.tipo==="saida"&&l.classe==="PF"&&l.categoria===c.id&&l.status!=="revisar";}).sort(function(a,b){return (a.data||"")<(b.data||"")?1:-1;});
       var open=(pfOpenCat===c.id);
-      h+='<div class="catrow"><div class="top" data-catview="'+c.id+'" style="cursor:pointer;align-items:center"><span style="font-weight:600">'+c.ic+' '+c.label+' <span class="muted" style="font-size:11px;font-weight:400">'+(open?"▾":"▸")+(items.length?(" "+items.length):"")+'</span></span><span class="num muted" style="font-size:13px">'+money(g)+' / '+money(tef)+'</span></div>'+
+      h+='<div class="catrow"><div class="top" data-catview="'+c.id+'" style="cursor:pointer;align-items:center"><span style="font-weight:600">'+c.ic+' '+c.label+' <span class="muted" style="font-size:11px;font-weight:400">'+(open?"▾":"▸")+(items.length?(" "+items.length):"")+'</span></span><span class="num '+(estou?"neg":"muted")+'" style="font-size:13px">'+money(g)+' / '+money(estou?base:lim)+'</span></div>'+
         '<div class="bar '+cls+'"><i style="width:'+pctb+'%"></i></div>'+
         (open?('<div style="margin-top:9px;border-top:1px solid var(--line);padding-top:3px">'+(items.length?items.map(function(l){return '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:13px"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.desc||"—")+'<span class="muted" style="font-size:11px">'+(l.data?("  ·  "+l.data.slice(8,10)+"/"+l.data.slice(5,7)):"")+'</span></span><span class="num neg" style="flex:none">'+money(l.valor)+'</span></div>';}).join(""):'<div class="muted" style="font-size:12.5px;padding:5px 0">Nada gasto nesta categoria no mês.</div>')+'</div>'):'')+
-        '<div class="steppers"><button class="step" data-m="'+c.id+'">−</button><input class="tetoinp num" type="number" inputmode="numeric" data-cat="'+c.id+'" value="'+stored+'"><button class="step" data-p="'+c.id+'">＋</button>'+
-          '<span class="steplab '+(rest<0?"neg":"muted")+'">'+(rest<0?('passou '+money(-rest)):('resta '+money(rest)))+'</span></div></div>';});
+        '<div class="steppers"><button class="step" data-m="'+c.id+'">−</button><input class="tetoinp num" type="number" inputmode="numeric" data-cat="'+c.id+'" value="'+base+'"><button class="step" data-p="'+c.id+'">＋</button>'+
+          '<span class="steplab '+(estou?"neg":(reduz>0.005?"near":"muted"))+'">'+(estou?('estourou '+money(g-base)):(reduz>0.005?('limite -'+money(reduz)):('resta '+money(rest))))+'</span></div></div>';});
     h+='</div>';
     // barra de uso do variável
     var usoPct=vTeto>0?(gastoTotal/vTeto*100):0;var ucls=usoPct>100?"ov":(usoPct>=85?"near":"good");
@@ -556,8 +559,10 @@ window.SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";window.SB_ANON="eyJhbGc
     S.db.collection("contas").add({desc:d,valor:v,dia:isNaN(dia)?null:dia,categoria:"despesa_pf",classe:"PF",status:"pendente",mes:S.mesSel}).then(reloadContas).catch(function(){toast("Erro ao adicionar");reloadContas();});
     toast("Conta adicionada ✓");}
   function bumpTeto(cat,delta){var c=CATMAP[cat];if(!c)return;setTeto(cat,Math.max(0,Math.round(((c.teto||0)+delta)/5)*5));}
-  function setTeto(cat,v){var c=CATMAP[cat];if(!c)return;c.teto=Math.max(0,v);
-    renderPessoal();clearTimeout(tetoTimer);tetoTimer=setTimeout(saveTetos,600);}
+  function setTeto(cat,v){var c=CATMAP[cat];if(!c)return;v=Math.max(0,v);
+    var vT=variavelTeto();var outros=CATS.reduce(function(a,x){return (x.classe==="PF"&&typeof x.teto==="number"&&x.id!==cat)?a+(x.teto||0):a;},0);
+    var maxv=Math.max(0,vT-outros);if(v>maxv){v=maxv;toast("Travado no total de "+money(vT));}
+    c.teto=v;renderPessoal();clearTimeout(tetoTimer);tetoTimer=setTimeout(saveTetos,600);}
   function saveTetos(){if(!S.db)return;var obj={};CATS.forEach(function(c){if(c.classe==="PF"&&typeof c.teto==="number")obj[c.id]=c.teto;});S.db.doc("config/tetos").set(obj).catch(function(){});}
 
   function rowChk(c){var st=statusEf(c);var on=st==="pago";var ispl=c.categoria==="prolabore";return '<div class="rowitem"><button class="chk'+(on?" on":"")+'" data-pay="'+c.id+'" aria-label="pago">✓</button><div class="mid"><div class="t" style="'+(on?"text-decoration:line-through;opacity:.6":"")+'">'+esc(c.desc)+estim(c)+'</div><div class="s">'+(c.dia?("dia "+c.dia+" · "):"")+'<span class="tagcls '+(c.classe||"PJ")+'">'+(c.classe||"PJ")+'</span>'+(ispl?(' · usado '+money(proLaboUsado(c.mes))+'/'+money(proLaboTotal())):'')+(st==="atrasado"?' · <span class="neg">vencida</span>':'')+'</div></div><div class="val num">'+money(vef(c))+(ispl?'<div class="s muted" style="font-weight:400">falta</div>':'')+'</div></div>';}
