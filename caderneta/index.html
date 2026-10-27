@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Gehlen's Club — Caderneta</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Figtree:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+/* tema compartilhado com o Financeiro (mesma chave gc_theme, padrão escuro) */
+(function(){try{var t=localStorage.getItem("gc_theme")||"dark";document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();
+</script>
+<style>
+:root{
+  --bg:#f0eff2; --surface:#ffffff; --surface-2:#f4f3f7; --line:#e6e4ec;
+  --fg:#18171b; --muted:#716f7a; --accent:#c41e2a; --accent-ink:#981320;
+  --red:#c41e2a; --red-bg:#fbeceb; --amber:#b9800f; --amber-bg:#f6eeda;
+  --green:#1f9d57; --green-bg:#e8f4ec;
+  --shadow:0 1px 2px rgba(18,16,22,.05),0 10px 26px rgba(18,16,22,.07);
+  --sans:"Figtree",-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;
+  --head:"Oswald","Arial Narrow",system-ui,sans-serif;
+  --num:ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#0a0809; --surface:#18141a; --surface-2:#201b22; --line:#2a242d;
+  --fg:#f5f3f6; --muted:#9a949e; --accent:#df2531; --accent-ink:#9c1620;
+  --red:#e5414c; --red-bg:#2a1618; --amber:#e2b55e; --amber-bg:#2a2112;
+  --green:#37c47e; --green-bg:#13241a;
+  --shadow:0 1px 2px rgba(0,0,0,.55),0 16px 36px rgba(0,0,0,.5);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.5}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+header{position:sticky;top:0;z-index:9;background:var(--surface);border-bottom:1px solid var(--line);margin:0 calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:14px max(16px,env(safe-area-inset-left,0px))}
+.hrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:9px;cursor:pointer}
+.mark{width:30px;height:30px;border-radius:9px;flex:none;background:linear-gradient(145deg,var(--accent),var(--accent-ink));display:grid;place-items:center;color:#fff;font-family:var(--head);font-weight:700;font-size:16px;box-shadow:0 2px 8px rgba(196,30,42,.45)}
+h1{font-family:var(--head);font-weight:600;letter-spacing:.5px;text-transform:uppercase;font-size:1.3rem;margin:0;color:var(--fg)}
+.sub{color:var(--muted);font-size:.82rem}
+.counts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.pill{font-size:.76rem;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid var(--line);display:inline-flex;gap:6px;align-items:center;color:var(--muted)}
+.pill b{font-family:var(--num)}
+.pill.red{color:var(--red);border-color:var(--red);background:var(--red-bg)}
+.pill.green{color:var(--green);border-color:var(--green);background:var(--green-bg)}
+
+.state{margin-top:14px;font-size:.82rem;border-radius:8px;padding:9px 12px}
+.state.ok{background:var(--green-bg);color:var(--green);border:1px solid var(--green)}
+.state.warn{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber)}
+.state.err{background:var(--red-bg);color:var(--red);border:1px solid var(--red)}
+.state.sync{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+
+/* adicionar lançamento */
+.addbox{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:16px;box-shadow:var(--shadow)}
+.addbox h3{font-family:var(--head);text-transform:uppercase;letter-spacing:.5px;font-size:.85rem;margin:0 0 10px;color:var(--accent)}
+.fld{margin-bottom:10px;position:relative}
+.fld label{display:block;font-size:.76rem;color:var(--muted);margin-bottom:4px;font-weight:600}
+.inp{width:100%;background:var(--surface-2);color:var(--fg);border:1px solid var(--line);border-radius:9px;padding:10px 12px;font:inherit;font-size:.95rem}
+.inp:focus{outline:none;border-color:var(--accent)}
+.row2{display:flex;gap:10px;flex-wrap:wrap}
+.row2 .fld{flex:1;min-width:130px;margin-bottom:10px}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:9px;font:inherit;font-size:.82rem;font-weight:600;cursor:pointer}
+.seg button.on[data-k="deve"]{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+.seg button.on[data-k="favor"]{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.addbtn{width:100%;background:linear-gradient(135deg,var(--accent),var(--accent-ink));color:#fff;border:none;border-radius:999px;padding:12px;font-family:var(--head);text-transform:uppercase;letter-spacing:.5px;font-weight:600;cursor:pointer;font-size:.9rem}
+.addbtn:disabled{opacity:.5;cursor:default}
+.ac{position:absolute;left:0;right:0;top:100%;z-index:6;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.25);margin-top:4px;max-height:220px;overflow:auto;display:none}
+.ac.open{display:block}
+.ac div{padding:9px 12px;cursor:pointer;font-size:.9rem}
+.ac div:hover,.ac div.sel{background:var(--surface-2)}
+.ac small{color:var(--muted);font-family:var(--num)}
+
+.busca{margin-top:18px}
+.busca input{width:100%;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:11px 13px;font:inherit;font-size:.95rem;box-shadow:var(--shadow)}
+
+section{margin-top:22px}
+.shead{display:flex;align-items:baseline;gap:9px;margin-bottom:10px}
+.shead h2{font-family:var(--head);text-transform:uppercase;letter-spacing:.6px;font-size:1.05rem;margin:0}
+.empty{color:var(--muted);font-size:.85rem;font-style:italic;padding:10px 0}
+
+.cli{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden}
+.cli.quitado{opacity:.72}
+.clihead{display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer}
+.clihead .nm{font-weight:600;font-size:1rem;flex:1;min-width:0}
+.clihead .nm small{display:block;color:var(--muted);font-size:.76rem;font-weight:400;font-family:var(--num)}
+.saldo{font-family:var(--num);font-weight:700;font-size:1.05rem;text-align:right;white-space:nowrap}
+.saldo.deve{color:var(--red)} .saldo.favor{color:var(--green)} .saldo.zero{color:var(--muted)}
+.saldo small{display:block;font-size:.6rem;font-weight:600;letter-spacing:.5px;color:var(--muted)}
+.caret{color:var(--muted);transition:transform .15s}
+.cli.open .caret{transform:rotate(90deg)}
+.itens{display:none;border-top:1px solid var(--line);padding:4px 14px 12px}
+.cli.open .itens{display:block}
+.item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.item:last-of-type{border-bottom:none}
+.item .idesc{flex:1;min-width:0}
+.item .idesc .dt{color:var(--muted);font-size:.72rem;font-family:var(--num)}
+.ival{font-family:var(--num);font-weight:600;white-space:nowrap}
+.ival.deve{color:var(--red)} .ival.favor{color:var(--green)} .ival.pagou{color:var(--muted)}
+.itag{font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:1px 6px;border-radius:999px;margin-left:6px}
+.itag.deve{background:var(--red-bg);color:var(--red)}
+.itag.favor{background:var(--green-bg);color:var(--green)}
+.itag.pagou{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.cliact{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.payline{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.payline .inp{flex:1;min-width:120px}
+.bpay{background:var(--green);color:#06301a;border:none;border-radius:9px;padding:9px 14px;font:inherit;font-weight:700;font-size:.84rem;cursor:pointer}
+.badd{background:var(--surface-2);border:1px solid var(--line);color:var(--fg);border-radius:9px;padding:9px 14px;font:inherit;font-weight:600;font-size:.84rem;cursor:pointer}
+.foot{color:var(--muted);font-size:.75rem;margin-top:28px;border-top:1px solid var(--line);padding-top:14px}
+
+#gate{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:20px;background:var(--bg)}
+#gate.show{display:flex}
+.gatebox{width:100%;max-width:340px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px 22px;text-align:center;box-shadow:var(--shadow)}
+.gatebox h2{font-family:var(--head);text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-size:1.2rem}
+.gatebox .gs{color:var(--muted);font-size:.82rem;margin:0 0 16px}
+.gatebox input{width:100%;background:var(--surface-2);color:var(--fg);border:1px solid var(--line);border-radius:9px;padding:11px;font:inherit;margin-bottom:10px}
+.gatebox button{width:100%;background:linear-gradient(135deg,var(--accent),var(--accent-ink));color:#fff;border:none;border-radius:999px;padding:12px;font-family:var(--head);text-transform:uppercase;letter-spacing:.5px;font-weight:600;cursor:pointer}
+.gateerr{color:var(--red);font-size:.8rem;min-height:18px;margin-top:4px}
+@media(max-width:460px){ .saldo{font-size:.95rem} }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gatebox">
+    <h2>Caderneta</h2>
+    <p class="gs">Gehlen's Club · acesso restrito</p>
+    <input id="lg-email" type="email" inputmode="email" autocomplete="username" placeholder="E-mail">
+    <input id="lg-pass" type="password" autocomplete="current-password" placeholder="Senha">
+    <button id="lg-btn">Entrar</button>
+    <div id="lg-err" class="gateerr"></div>
+  </div>
+</div>
+
+<div class="wrap">
+<header>
+  <div class="hrow">
+    <div class="brand"><div class="mark">G</div><h1>Caderneta</h1></div>
+    <span class="sub">Gehlen's Club · contas e fiado dos clientes</span>
+  </div>
+  <div class="counts" id="counts"></div>
+</header>
+
+<div id="state" class="state sync">Carregando…</div>
+
+<div class="addbox">
+  <h3>Anotar uma conta</h3>
+  <div class="fld">
+    <label for="nome">Cliente</label>
+    <input class="inp" id="nome" type="text" autocomplete="off" placeholder="Nome do cliente (puxa dos contratos ativos)">
+    <div class="ac" id="ac"></div>
+  </div>
+  <div class="row2">
+    <div class="fld">
+      <label>Tipo</label>
+      <div class="seg" id="seg">
+        <button type="button" data-k="deve" class="on">Pegou / deve</button>
+        <button type="button" data-k="favor">Crédito a favor</button>
+      </div>
+    </div>
+    <div class="fld">
+      <label for="valor">Valor (R$)</label>
+      <input class="inp" id="valor" type="text" inputmode="decimal" placeholder="0,00">
+    </div>
+  </div>
+  <div class="fld">
+    <label for="desc">O que foi (nome do valor)</label>
+    <input class="inp" id="desc" type="text" placeholder="Ex.: pomada, corte do filho, produto…">
+  </div>
+  <button class="addbtn" id="add" disabled>Salvar na caderneta</button>
+</div>
+
+<div class="busca">
+  <input id="busca" type="search" placeholder="Buscar cliente na caderneta…" autocomplete="off">
+</div>
+
+<section>
+  <div class="shead"><h2>Contas em aberto</h2></div>
+  <div id="listAberto"></div>
+</section>
+
+<section>
+  <div class="shead"><h2>Quitados</h2></div>
+  <div id="listQuit"></div>
+</section>
+
+<p class="foot" id="foot">Tudo que a Milena anota aqui fica salvo no servidor (não some ao fechar a página e vale em qualquer aparelho). O saldo de cada cliente é o que ele <b>deve</b> menos os <b>créditos a favor</b> e menos o que já <b>pagou</b>. Nada é apagado: cada lançamento fica no histórico do cliente.</p>
+</div>
+
+<script>
+/* ---------- Supabase + login compartilhado ---------- */
+var SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";
+var SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwemV5aXZmeW1udGJpc3ByeHNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMjE0MDcsImV4cCI6MjEwNjc5NzQwN30.bnr2FU-oOnuXlhiKcMZGgOiP0r1Dp0UDYOhRChGWE1Y";
+var sb=window.supabase.createClient(SB_URL,SB_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+var ME="";
+const $=s=>document.querySelector(s);
+
+(function(){
+  var gate=document.getElementById("gate");
+  function show(s){ gate.classList.toggle("show",!!s); }
+  function doLogin(){
+    var em=(document.getElementById("lg-email").value||"").trim(), pw=document.getElementById("lg-pass").value||"";
+    var btn=document.getElementById("lg-btn"), err=document.getElementById("lg-err");
+    if(!em||!pw){ err.textContent="Preencha e-mail e senha."; return; }
+    btn.disabled=true; btn.textContent="Entrando…"; err.textContent="";
+    sb.auth.signInWithPassword({email:em,password:pw}).then(function(r){
+      btn.disabled=false; btn.textContent="Entrar";
+      if(r.error){ err.textContent="E-mail ou senha incorretos."; return; }
+      show(false);
+    }).catch(function(){ btn.disabled=false; btn.textContent="Entrar"; err.textContent="Erro ao entrar. Tente de novo."; });
+  }
+  document.getElementById("lg-btn").addEventListener("click",doLogin);
+  document.getElementById("lg-pass").addEventListener("keydown",function(e){ if(e.key==="Enter") doLogin(); });
+  sb.auth.onAuthStateChange(function(_e,session){ ME=(session&&session.user&&session.user.email)||""; show(!session); if(session) carregar(); });
+  sb.auth.getSession().then(function(r){ var s=r.data&&r.data.session; ME=(s&&s.user&&s.user.email)||""; show(!s); if(s) carregar(); }).catch(function(){ show(true); });
+})();
+
+/* ---------- dados ---------- */
+let ITENS=[];            // todos os lançamentos (do Supabase)
+const money=n=>'R$ '+(Math.round(n*100)/100).toFixed(2).replace('.',',');
+function parseVal(s){ const n=parseFloat(String(s||'').replace(/[^\d,.-]/g,'').replace(/\.(?=\d{3})/g,'').replace(',','.')); return isNaN(n)?0:Math.abs(n); }
+function telKey(x){ const d=String(x||'').replace(/\D/g,''); return d.length>=10?d.slice(-10):d; }
+function esc(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+function fmtDT(iso){ try{const d=new Date(iso);return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();}catch(e){return '';} }
+
+function setState(kind,msg){ const el=$('#state'); el.className='state '+kind; el.textContent=msg; }
+
+async function carregar(){
+  setState('sync','Carregando a caderneta…');
+  const {data,error}=await sb.from('caderneta').select('*').order('criado_em',{ascending:true});
+  if(error){
+    if(/relation|does not exist|schema cache/i.test(error.message||''))
+      setState('warn','A tabela da caderneta ainda não existe no banco. Rode o SQL que o time te passou e recarregue.');
+    else setState('err','Não consegui carregar: '+error.message);
+    ITENS=[]; render(); return;
+  }
+  ITENS=data||[];
+  setState('ok','Caderneta salva no servidor — '+ITENS.length+' lançamentos. Atualiza sozinho em qualquer aparelho.');
+  render();
+}
+
+/* agrupa por cliente (chave: telefone se tiver, senão nome minúsculo) */
+function grupos(){
+  const g=new Map();
+  for(const it of ITENS){
+    const key = it.tel ? telKey(it.tel) : ('n:'+String(it.cliente||'').trim().toLowerCase());
+    let o=g.get(key);
+    if(!o){ o={key, cliente:it.cliente, tel:it.tel||'', itens:[], saldo:0}; g.set(key,o); }
+    o.cliente=it.cliente||o.cliente;
+    o.itens.push(it);
+    const v=Number(it.valor)||0;
+    if(it.tipo==='deve') o.saldo+=v;
+    else o.saldo-=v;                 // favor e pagou abatem
+  }
+  const arr=[...g.values()];
+  arr.forEach(o=>{ o.saldo=Math.round(o.saldo*100)/100; o.itens.sort((a,b)=> new Date(b.criado_em)-new Date(a.criado_em)); });
+  return arr;
+}
+
+/* ---------- autocomplete de cliente (contratos ativos) ---------- */
+function assinantesList(){
+  try{ const a=JSON.parse(localStorage.getItem('gc_assinantes')||'null'); if(!a||!a.byPhone) return [];
+    return Object.keys(a.byPhone).map(k=>({nome:a.byPhone[k].nome,tel:k})).filter(x=>x.nome); }catch(e){ return []; }
+}
+let selTel='';
+const acBox=$('#ac'), nomeInp=$('#nome');
+function renderAc(){
+  const q=(nomeInp.value||'').trim().toLowerCase();
+  if(!q){ acBox.classList.remove('open'); return; }
+  const hits=assinantesList().filter(c=>c.nome.toLowerCase().includes(q)).slice(0,8);
+  if(!hits.length){ acBox.classList.remove('open'); return; }
+  acBox.innerHTML=hits.map(c=>`<div data-nome="${esc(c.nome)}" data-tel="${esc(c.tel)}">${esc(c.nome)} <small>${esc(c.tel)}</small></div>`).join('');
+  acBox.classList.add('open');
+  acBox.querySelectorAll('div').forEach(d=>d.addEventListener('mousedown',e=>{
+    e.preventDefault(); nomeInp.value=d.getAttribute('data-nome'); selTel=d.getAttribute('data-tel'); acBox.classList.remove('open'); checkAdd();
+  }));
+}
+nomeInp.addEventListener('input',()=>{ selTel=''; renderAc(); checkAdd(); });
+nomeInp.addEventListener('blur',()=>setTimeout(()=>acBox.classList.remove('open'),150));
+
+/* segmento tipo */
+let tipo='deve';
+$('#seg').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+  tipo=b.getAttribute('data-k');
+  $('#seg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+}));
+
+function checkAdd(){
+  const ok=(nomeInp.value||'').trim() && parseVal($('#valor').value)>0;
+  $('#add').disabled=!ok;
+}
+$('#valor').addEventListener('input',checkAdd);
+$('#desc').addEventListener('input',checkAdd);
+
+async function inserir(obj){
+  const {error}=await sb.from('caderneta').insert(obj);
+  if(error){ setState('err','Não consegui salvar: '+error.message+' (nada foi perdido, tente de novo)'); return false; }
+  await carregar(); return true;
+}
+
+$('#add').addEventListener('click',async()=>{
+  const nome=(nomeInp.value||'').trim(); const valor=parseVal($('#valor').value);
+  if(!nome||!(valor>0)) return;
+  $('#add').disabled=true; setState('sync','Salvando…');
+  const ok=await inserir({cliente:nome, tel:selTel||null, tipo, valor, descricao:($('#desc').value||'').trim(), criado_por:ME});
+  if(ok){ nomeInp.value=''; selTel=''; $('#valor').value=''; $('#desc').value=''; }
+  checkAdd();
+});
+
+/* ---------- render ---------- */
+function clienteCard(o){
+  const el=document.createElement('div');
+  const quit = o.saldo===0;
+  el.className='cli'+(quit?' quitado':'');
+  const cls = o.saldo>0?'deve':(o.saldo<0?'favor':'zero');
+  const lbl = o.saldo>0?'DEVE':(o.saldo<0?'A FAVOR':'QUITADO');
+  el.innerHTML=`
+    <div class="clihead">
+      <div class="nm">${esc(o.cliente)}${o.tel?`<small>${esc(o.tel)}</small>`:''}</div>
+      <div class="saldo ${cls}">${o.saldo===0?'R$ 0,00':money(Math.abs(o.saldo))}<small>${lbl}</small></div>
+      <span class="caret">▶</span>
+    </div>
+    <div class="itens">
+      ${o.itens.map(it=>{
+        const v=Number(it.valor)||0;
+        return `<div class="item">
+          <div class="idesc">${esc(it.descricao||(it.tipo==='pagou'?'Pagamento':it.tipo==='favor'?'Crédito':'Conta'))}
+            <span class="itag ${it.tipo}">${it.tipo==='deve'?'Pegou':it.tipo==='favor'?'A favor':'Pagou'}</span>
+            <div class="dt">${fmtDT(it.criado_em)}${it.criado_por?' · '+esc(String(it.criado_por).split('@')[0]):''}</div>
+          </div>
+          <div class="ival ${it.tipo}">${it.tipo==='deve'?'+':'−'}${money(v)}</div>
+        </div>`;
+      }).join('')}
+      <div class="payline">
+        <input class="inp pay" type="text" inputmode="decimal" placeholder="Valor que pagou (R$)">
+        <button class="bpay">Registrar pagamento</button>
+      </div>
+      <div class="cliact">
+        <button class="badd deve2">+ Pegou algo</button>
+        <button class="badd favor2">+ Crédito a favor</button>
+      </div>
+    </div>`;
+  el.querySelector('.clihead').addEventListener('click',()=>el.classList.toggle('open'));
+  const payInp=el.querySelector('.pay');
+  el.querySelector('.bpay').addEventListener('click',async e=>{
+    e.stopPropagation(); const v=parseVal(payInp.value); if(!(v>0)){ payInp.focus(); return; }
+    e.target.disabled=true; setState('sync','Salvando pagamento…');
+    await inserir({cliente:o.cliente, tel:o.tel||null, tipo:'pagou', valor:v, descricao:'Pagamento', criado_por:ME});
+  });
+  el.querySelector('.deve2').addEventListener('click',e=>{ e.stopPropagation(); preencher(o,'deve'); });
+  el.querySelector('.favor2').addEventListener('click',e=>{ e.stopPropagation(); preencher(o,'favor'); });
+  return el;
+}
+function preencher(o,t){
+  nomeInp.value=o.cliente; selTel=o.tel||''; tipo=t;
+  $('#seg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.getAttribute('data-k')===t));
+  $('#valor').focus(); checkAdd(); window.scrollTo({top:0,behavior:'smooth'});
+}
+function render(){
+  const q=($('#busca').value||'').trim().toLowerCase();
+  let gs=grupos();
+  if(q) gs=gs.filter(o=>o.cliente.toLowerCase().includes(q));
+  const aberto=gs.filter(o=>o.saldo!==0).sort((a,b)=>Math.abs(b.saldo)-Math.abs(a.saldo));
+  const quit=gs.filter(o=>o.saldo===0).sort((a,b)=>a.cliente.localeCompare(b.cliente));
+  const la=$('#listAberto'), lq=$('#listQuit');
+  la.innerHTML=''; lq.innerHTML='';
+  if(!aberto.length) la.innerHTML='<div class="empty">Nenhuma conta em aberto.</div>';
+  else aberto.forEach(o=>la.appendChild(clienteCard(o)));
+  if(!quit.length) lq.innerHTML='<div class="empty">Ninguém quitado por aqui ainda.</div>';
+  else quit.forEach(o=>lq.appendChild(clienteCard(o)));
+  const totDeve=aberto.filter(o=>o.saldo>0).reduce((s,o)=>s+o.saldo,0);
+  const nDeve=aberto.filter(o=>o.saldo>0).length;
+  const nFavor=aberto.filter(o=>o.saldo<0).length;
+  $('#counts').innerHTML=
+    `<span class="pill red"><b>${nDeve}</b> devendo · ${money(totDeve)}</span>`+
+    (nFavor?`<span class="pill green"><b>${nFavor}</b> com crédito</span>`:'')+
+    `<span class="pill"><b>${quit.length}</b> quitados</span>`;
+}
+$('#busca').addEventListener('input',render);
+</script>
+
+<script>window.GC_MODULE="caderneta";</script>
+<script src="/switch.js" defer></script>
+</body>
+</html>

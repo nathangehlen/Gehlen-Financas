@@ -10,6 +10,7 @@
     { key: "financas", label: "Finanças",  href: "/",          ic: "₲", hint: "Caixa, contas e lucro" },
     { key: "retorno",  label: "Retorno",   href: "/retorno/",  ic: "↩", hint: "Clientes sumidos pra reagendar" },
     { key: "cobranca", label: "Cobrança",  href: "/cobranca/", ic: "◎", hint: "Assinaturas, Asaas e Cash Barber" },
+    { key: "caderneta", label: "Caderneta", href: "/caderneta/", ic: "✎", hint: "Fiado e contas dos clientes" },
   ];
   var CUR = (window.GC_MODULE || "financas");
   var curMod = MODULES.filter(function (m) { return m.key === CUR; })[0] || MODULES[0];
