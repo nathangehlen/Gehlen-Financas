@@ -7,35 +7,49 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Figtree:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+/* tema compartilhado com o Financeiro (mesma chave gc_theme, padrão escuro) */
+(function(){try{var t=localStorage.getItem("gc_theme")||"dark";document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();
+</script>
 <style>
-/* Layout: cabeçalho fixo + upload da planilha + mensagem editável + duas faixas (alerta/atenção) de cards com botão WhatsApp */
+/* Tema claro (padrão) — espelha o Financeiro */
 :root{
   --bg:#f0eff2; --surface:#ffffff; --surface-2:#f4f3f7; --line:#e6e4ec;
   --fg:#18171b; --muted:#716f7a; --accent:#c41e2a; --accent-ink:#981320;
   --red:#c41e2a; --red-bg:#fbeceb; --amber:#b9800f; --amber-bg:#f6eeda;
   --green:#1f9d57; --green-bg:#e8f4ec;
+  --shadow:0 1px 2px rgba(18,16,22,.05),0 10px 26px rgba(18,16,22,.07);
   --sans:"Figtree",-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;
   --head:"Oswald","Arial Narrow",system-ui,sans-serif;
   --num:ui-monospace,"SFMono-Regular",Menlo,monospace;
   color-scheme:light;
 }
+/* Tema escuro — espelha o Financeiro */
+:root[data-theme="dark"]{
+  --bg:#0a0809; --surface:#18141a; --surface-2:#201b22; --line:#2a242d;
+  --fg:#f5f3f6; --muted:#9a949e; --accent:#df2531; --accent-ink:#9c1620;
+  --red:#e5414c; --red-bg:#2a1618; --amber:#e2b55e; --amber-bg:#2a2112;
+  --green:#37c47e; --green-bg:#13241a;
+  --shadow:0 1px 2px rgba(0,0,0,.55),0 16px 36px rgba(0,0,0,.5);
+  color-scheme:dark;
+}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.5}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
 .wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
-header{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--surface);border-bottom:1px solid var(--line);margin:0 calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:14px max(16px,env(safe-area-inset-left,0px)) 14px max(16px,env(safe-area-inset-right,0px))}
+header{position:sticky;top:0;z-index:9;background:var(--surface);border-bottom:1px solid var(--line);margin:0 calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:14px max(16px,env(safe-area-inset-left,0px))}
 .hrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:9px;cursor:pointer}
 .mark{width:30px;height:30px;border-radius:9px;flex:none;background:linear-gradient(145deg,var(--accent),var(--accent-ink));display:grid;place-items:center;color:#fff;font-family:var(--head);font-weight:700;font-size:16px;box-shadow:0 2px 8px rgba(196,30,42,.45)}
-h1{font-family:var(--head);font-weight:600;letter-spacing:.5px;text-transform:uppercase;font-size:1.3rem;margin:0}
+h1{font-family:var(--head);font-weight:600;letter-spacing:.5px;text-transform:uppercase;font-size:1.3rem;margin:0;color:var(--fg)}
 .sub{color:var(--muted);font-size:.82rem}
 .counts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.pill{font-size:.76rem;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid var(--line);display:inline-flex;gap:6px;align-items:center}
+.pill{font-size:.76rem;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid var(--line);display:inline-flex;gap:6px;align-items:center;color:var(--muted)}
 .pill b{font-family:var(--num)}
 .pill.red{color:var(--red);border-color:var(--red);background:var(--red-bg)}
 .pill.amber{color:var(--amber);border-color:var(--amber);background:var(--amber-bg)}
+.pill.green{color:var(--green);border-color:var(--green);background:var(--green-bg)}
 
-.upload{margin-top:18px;border:1.5px dashed var(--line);border-radius:12px;background:var(--surface);padding:18px 16px;text-align:center;cursor:pointer;transition:border-color .15s, background .15s}
+.upload{margin-top:18px;border:1.5px dashed var(--line);border-radius:14px;background:var(--surface);padding:18px 16px;text-align:center;cursor:pointer;transition:border-color .15s, background .15s}
 .upload:hover,.upload.drag{border-color:var(--accent);background:var(--surface-2)}
 .upload h3{font-family:var(--head);text-transform:uppercase;letter-spacing:.5px;font-size:.9rem;margin:0 0 4px;color:var(--accent)}
 .upload p{margin:0;color:var(--muted);font-size:.82rem}
@@ -46,7 +60,7 @@ h1{font-family:var(--head);font-weight:600;letter-spacing:.5px;text-transform:up
 .banner.loaded{background:var(--green-bg);color:var(--green);border:1px solid var(--green)}
 .banner.err{background:var(--red-bg);color:var(--red);border:1px solid var(--red)}
 
-.msgbox{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:18px}
+.msgbox{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:18px;box-shadow:var(--shadow)}
 .msgbox label{font-family:var(--head);text-transform:uppercase;letter-spacing:.5px;font-size:.78rem;color:var(--accent);display:block;margin-bottom:6px}
 .msgbox textarea{width:100%;min-height:92px;resize:vertical;background:var(--surface-2);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit;font-size:.9rem}
 .msghint{color:var(--muted);font-size:.76rem;margin-top:8px}
@@ -60,44 +74,57 @@ section{margin-top:24px}
 .shead{display:flex;align-items:baseline;gap:9px;margin-bottom:4px}
 .shead h2{font-family:var(--head);text-transform:uppercase;letter-spacing:.6px;font-size:1.05rem;margin:0}
 .shead .dot{width:10px;height:10px;border-radius:50%}
-.red .dot{background:var(--red)} .amber .dot{background:var(--amber)}
+.red .dot{background:var(--red)} .amber .dot{background:var(--amber)} .green .dot{background:var(--green)}
 .sdesc{color:var(--muted);font-size:.8rem;margin:0 0 12px}
+.grouplabel{font-family:var(--head);text-transform:uppercase;letter-spacing:.5px;font-size:.74rem;color:var(--muted);margin:14px 0 8px;display:flex;align-items:center;gap:8px}
+.grouplabel b{color:var(--fg)}
+.grouplabel .n{font-family:var(--num);color:var(--muted);font-weight:600}
 
 .list{display:flex;flex-direction:column;gap:10px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(18,16,22,.05),0 10px 26px rgba(18,16,22,.07);padding:13px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:13px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .card.alerta{border-left:4px solid var(--red)}
 .card.atencao{border-left:4px solid var(--amber)}
-.card.booked{opacity:.58}
+.card.parked{border-left:4px solid var(--green)}
+.card.booked{opacity:.62}
 .days{font-family:var(--num);font-weight:700;font-size:1.5rem;line-height:1;min-width:52px;text-align:center}
-.card.alerta .days{color:var(--red)} .card.atencao .days{color:var(--amber)}
+.card.alerta .days{color:var(--red)} .card.atencao .days{color:var(--amber)} .card.parked .days{color:var(--green)}
 .days small{display:block;font-size:.6rem;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-top:3px}
 .info{flex:1;min-width:0}
 .name{font-weight:600;font-size:1rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .badge{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:999px}
-.badge.club{background:var(--accent);color:var(--accent-ink)}
+.badge.club{background:var(--accent);color:#fff}
 .badge.booked{background:transparent;border:1px solid var(--green);color:var(--green)}
 .badge.warn{background:transparent;border:1px solid var(--red);color:var(--red)}
 .meta{color:var(--muted);font-size:.8rem;margin-top:3px;display:flex;gap:4px 12px;flex-wrap:wrap}
 .meta .tel{font-family:var(--num);cursor:pointer;border-bottom:1px dashed var(--muted)}
-.wa{flex-shrink:0;display:inline-flex;align-items:center;gap:7px;background:#25D366;color:#06301a;font-weight:700;font-size:.88rem;text-decoration:none;padding:9px 15px;border-radius:9px;border:none;cursor:pointer}
+.actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.wa{display:inline-flex;align-items:center;gap:7px;background:#25D366;color:#06301a;font-weight:700;font-size:.88rem;text-decoration:none;padding:9px 15px;border-radius:9px;border:none;cursor:pointer}
 .wa:hover{filter:brightness(1.07)}
 .wa svg{width:17px;height:17px}
+.kebab{background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:9px;width:36px;height:36px;font-size:18px;line-height:1;cursor:pointer;flex:none}
+.kebab:hover{color:var(--fg)}
+.menu{position:absolute;right:14px;top:52px;z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:11px;box-shadow:0 12px 34px rgba(0,0,0,.28);padding:6px;min-width:190px;display:none}
+.menu.open{display:block}
+.menu button{display:block;width:100%;text-align:left;background:transparent;border:0;color:var(--fg);font:inherit;font-size:.86rem;padding:9px 11px;border-radius:8px;cursor:pointer}
+.menu button:hover{background:var(--surface-2)}
+.menu button.g{color:var(--green)}
 .empty{color:var(--muted);font-size:.85rem;padding:10px 0;font-style:italic}
 .foot{color:var(--muted);font-size:.75rem;margin-top:30px;border-top:1px solid var(--line);padding-top:14px}
 @media(max-width:460px){
   .card{gap:10px}
   .days{min-width:44px;font-size:1.3rem}
-  .wa{width:100%;justify-content:center;margin-top:4px}
+  .actions{width:100%;justify-content:space-between;margin-top:4px}
+  .wa{flex:1;justify-content:center}
 }
 
 /* Gate de login (mesmo login dos outros módulos) */
 #gate{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:20px;background:var(--bg)}
 #gate.show{display:flex}
-.gatebox{width:100%;max-width:340px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px 22px;text-align:center}
+.gatebox{width:100%;max-width:340px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px 22px;text-align:center;box-shadow:var(--shadow)}
 .gatebox h2{font-family:var(--head);text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-size:1.2rem}
 .gatebox .gs{color:var(--muted);font-size:.82rem;margin:0 0 16px}
 .gatebox input{width:100%;background:var(--surface-2);color:var(--fg);border:1px solid var(--line);border-radius:9px;padding:11px;font:inherit;margin-bottom:10px}
-.gatebox button{width:100%;background:var(--accent);color:var(--accent-ink);border:none;border-radius:9px;padding:12px;font-family:var(--head);text-transform:uppercase;letter-spacing:.5px;font-weight:600;cursor:pointer}
+.gatebox button{width:100%;background:linear-gradient(135deg,var(--accent),var(--accent-ink));color:#fff;border:none;border-radius:999px;padding:12px;font-family:var(--head);text-transform:uppercase;letter-spacing:.5px;font-weight:600;cursor:pointer}
 .gateerr{color:var(--red);font-size:.8rem;min-height:18px;margin-top:4px}
 </style>
 </head>
@@ -138,20 +165,31 @@ section{margin-top:24px}
 </div>
 
 <div class="filters">
-  <label><input type="checkbox" id="fBooked" checked> Ocultar quem já tem horário marcado</label>
-  <label><input type="checkbox" id="fClub"> Mostrar só assinantes do clube</label>
+  <label><input type="checkbox" id="fBooked" checked> Ocultar quem já tem horário marcado na agenda</label>
 </div>
+
+<section class="green" id="secAgendados" hidden>
+  <div class="shead green"><span class="dot"></span><h2>Agendados</h2></div>
+  <p class="sdesc">Você marcou como "já foi agendado". Saem das listas abaixo. Na próxima planilha, quem não tiver comparecido volta automaticamente pra lista.</p>
+  <div class="list" id="listAgendados"></div>
+</section>
 
 <section class="red">
   <div class="shead red"><span class="dot"></span><h2>Alerta vermelho</h2></div>
   <p class="sdesc">15 dias ou mais sem comanda fechada. Risco de perder o cliente — priorizar.</p>
-  <div class="list" id="listAlerta"></div>
+  <div class="grouplabel"><b>Não assinantes</b><span class="n" id="nAlNao"></span></div>
+  <div class="list" id="listAlNao"></div>
+  <div class="grouplabel"><b>Assinantes do clube</b><span class="n" id="nAlClube"></span></div>
+  <div class="list" id="listAlClube"></div>
 </section>
 
 <section class="amber">
   <div class="shead amber"><span class="dot"></span><h2>Atenção</h2></div>
   <p class="sdesc">12 a 14 dias sem comanda fechada. Encaixar conforme abre espaço na agenda.</p>
-  <div class="list" id="listAtencao"></div>
+  <div class="grouplabel"><b>Não assinantes</b><span class="n" id="nAtNao"></span></div>
+  <div class="list" id="listAtNao"></div>
+  <div class="grouplabel"><b>Assinantes do clube</b><span class="n" id="nAtClube"></span></div>
+  <div class="list" id="listAtClube"></div>
 </section>
 
 <p class="foot" id="foot"></p>
@@ -183,10 +221,14 @@ section{margin-top:24px}
 })();
 
 /* ---------- Monitor de retorno (roda no navegador a partir da planilha) ---------- */
-const SAMPLE = {"gerado":"—","exemplo":true,"clientes":[]};
-
-let DATA = SAMPLE;
+let DATA = {gerado:"—", exemplo:true, clientes:[]};
 const $ = s => document.querySelector(s);
+
+/* marca "já foi agendado": guardada por telefone, com a data da última comanda no momento da marca */
+const AG_KEY = "gc_retorno_agendado";
+function loadAg(){ try{ return JSON.parse(localStorage.getItem(AG_KEY)||"{}"); }catch(e){ return {}; } }
+function saveAg(o){ try{ localStorage.setItem(AG_KEY, JSON.stringify(o)); }catch(e){} }
+let AG = loadAg();
 
 const WAICON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.82 11.82 0 018.413 3.488 11.82 11.82 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.82 9.82 0 001.517 5.248l-.999 3.648 3.971-.999zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.074-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg>';
 
@@ -202,6 +244,7 @@ function parseCliente(c){
   const tel = parts.find(p=>/\d{4,}/.test(p) && !p.includes('@')) || '';
   return {nome, tel};
 }
+function telKey(tel){ const d=String(tel||'').replace(/\D/g,''); return d.length>=10?d.slice(-10):d; }
 function normTel(tel){
   let d = String(tel||'').replace(/\D/g,'');
   if((d.length===12||d.length===13) && d.startsWith('55')) d = d.slice(2); // tira código do país
@@ -231,8 +274,9 @@ function computar(rows){
     if(!tel) continue;
     const dd = parseDate(r[cData]); if(!dd) continue;
     const status = String(r[cStatus]||'').trim().toLowerCase();
-    let o = cli.get(tel);
-    if(!o){ o = {nome, tel, lastFin:null, future:null, clube:false, prof:''}; cli.set(tel,o); }
+    const key = telKey(tel);
+    let o = cli.get(key);
+    if(!o){ o = {nome, tel, key, lastFin:null, future:null, clube:false, prof:''}; cli.set(key,o); }
     o.nome = nome;
     if(cClube && String(r[cClube]||'').trim().toLowerCase()==='sim') o.clube = true;
     if(status==='finalizado'){
@@ -247,13 +291,29 @@ function computar(rows){
     const dias = Math.floor((hoje - o.lastFin)/86400000);
     if(dias < 12) continue;
     const {wa, ok} = normTel(o.tel);
-    out.push({nome:o.nome, tel:o.tel, wa, tel_ok:ok, dias,
+    out.push({nome:o.nome, tel:o.tel, key:o.key, wa, tel_ok:ok, dias,
       ultima:fmtBR(o.lastFin), clube:o.clube, prof:o.prof,
       agendado:o.future?fmtDM(o.future):null,
       janela: dias>=15 ? 'alerta' : 'atencao'});
   }
   out.sort((a,b)=> b.dias-a.dias || a.nome.localeCompare(b.nome));
   return {gerado: fmtBR(hoje), exemplo:false, clientes: out, lidos: rows.length};
+}
+
+/* Ao subir uma planilha NOVA: reconcilia os "agendados".
+   Quem foi marcado e NÃO compareceu (continua na lista com a mesma última comanda)
+   volta pra lista. Quem compareceu (sumiu da lista ou comanda nova) é limpo. */
+function reconciliarAgendados(){
+  const byKey = {}; DATA.clientes.forEach(c=>byKey[c.key]=c);
+  let changed=false;
+  for(const k of Object.keys(AG)){
+    const c = byKey[k];
+    if(!c){ delete AG[k]; changed=true; continue; }           // sumiu da lista = compareceu
+    if(c.ultima !== AG[k].ultima){ delete AG[k]; changed=true; } // última comanda nova = compareceu
+    // mesma última comanda = não compareceu -> mantém marcado? NÃO: volta pra lista
+    else { delete AG[k]; changed=true; }
+  }
+  if(changed) saveAg(AG);
 }
 
 /* ---------- upload ---------- */
@@ -269,6 +329,7 @@ function handleFile(file){
   Papa.parse(file, {header:true, skipEmptyLines:'greedy', complete:res=>{
     try{
       DATA = computar(res.data);
+      reconciliarAgendados();
       render();
     }catch(err){
       banner('err', 'Não consegui ler: '+err.message+' Confere se é o CSV certo da agenda.');
@@ -286,15 +347,21 @@ function waLink(c){
   return 'https://wa.me/'+c.wa+'?text='+encodeURIComponent(m);
 }
 function esc(s){ return String(s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
-function card(c){
+function closeMenus(){ document.querySelectorAll('.menu.open').forEach(m=>m.classList.remove('open')); }
+document.addEventListener('click', closeMenus);
+
+function marcarAgendado(c){ AG[c.key]={ultima:c.ultima, nome:c.nome}; saveAg(AG); render(); }
+function desmarcarAgendado(c){ delete AG[c.key]; saveAg(AG); render(); }
+
+function card(c, parked){
   const el = document.createElement('div');
-  el.className = 'card '+c.janela+(c.agendado?' booked':'');
+  el.className = 'card '+(parked?'parked':c.janela)+(c.agendado&&!parked?' booked':'');
   el.innerHTML = `
     <div class="days">${c.dias}<small>DIAS</small></div>
     <div class="info">
       <div class="name">${esc(c.nome)}
         ${c.clube?'<span class="badge club">Clube</span>':''}
-        ${c.agendado?`<span class="badge booked">Já marcou ${c.agendado}</span>`:''}
+        ${c.agendado?`<span class="badge booked">Agenda ${c.agendado}</span>`:''}
         ${!c.tel_ok?'<span class="badge warn">Conferir nº</span>':''}
       </div>
       <div class="meta">
@@ -303,48 +370,78 @@ function card(c){
         ${c.prof?`<span>${esc(c.prof)}</span>`:''}
       </div>
     </div>
-    <a class="wa" target="_blank" rel="noopener">${WAICON}WhatsApp</a>`;
+    <div class="actions">
+      <a class="wa" target="_blank" rel="noopener">${WAICON}WhatsApp</a>
+      <button class="kebab" title="Mais">⋯</button>
+    </div>
+    <div class="menu">
+      ${parked
+        ? '<button class="back">↩ Ainda não veio — voltar pra lista</button>'
+        : '<button class="g agendar">✓ Já foi agendado</button>'}
+    </div>`;
   const a = el.querySelector('.wa');
   a.href = waLink(c);
   a.addEventListener('click', ()=>{ setTimeout(()=>{ a.href = waLink(c); },0); });
   el.querySelector('.tel').addEventListener('click', e=>{
+    e.stopPropagation();
     navigator.clipboard?.writeText(c.tel).then(()=>{ e.target.textContent=c.tel+' ✓'; setTimeout(()=>e.target.textContent=c.tel,1200); }).catch(()=>{});
   });
+  const menu = el.querySelector('.menu');
+  el.querySelector('.kebab').addEventListener('click', e=>{
+    e.stopPropagation(); const wasOpen=menu.classList.contains('open'); closeMenus(); if(!wasOpen) menu.classList.add('open');
+  });
+  const ag = el.querySelector('.agendar'); if(ag) ag.addEventListener('click', e=>{ e.stopPropagation(); marcarAgendado(c); });
+  const bk = el.querySelector('.back'); if(bk) bk.addEventListener('click', e=>{ e.stopPropagation(); desmarcarAgendado(c); });
   return el;
 }
-function fill(sel, arr, emptyMsg){
+function fill(sel, arr, parked, emptyMsg){
   const box = $(sel); box.innerHTML='';
   if(!arr.length){ box.innerHTML = `<div class="empty">${emptyMsg}</div>`; return; }
-  arr.forEach(c=>box.appendChild(card(c)));
+  arr.forEach(c=>box.appendChild(card(c, parked)));
 }
 function render(){
-  $('#ger').textContent = DATA.gerado + (DATA.exemplo ? '' : '');
-  const hideBooked = $('#fBooked').checked, clubOnly = $('#fClub').checked;
-  const keep = c => (!hideBooked || !c.agendado) && (!clubOnly || c.clube);
-  const al = DATA.clientes.filter(c=>c.janela==='alerta' && keep(c));
-  const at = DATA.clientes.filter(c=>c.janela==='atencao' && keep(c));
-  fill('#listAlerta', al, 'Ninguém neste filtro agora.');
-  fill('#listAtencao', at, 'Ninguém neste filtro agora.');
-  const totAl = DATA.clientes.filter(c=>c.janela==='alerta').length;
-  const totAt = DATA.clientes.filter(c=>c.janela==='atencao').length;
-  const booked = DATA.clientes.filter(c=>c.agendado).length;
+  $('#ger').textContent = DATA.gerado;
+  const hideBooked = $('#fBooked').checked;
+  const isParked = c => !!AG[c.key];
+  const visible = DATA.clientes.filter(c=> !isParked(c) && (!hideBooked || !c.agendado));
+  const parked  = DATA.clientes.filter(isParked);
+
+  const alNao   = visible.filter(c=>c.janela==='alerta' && !c.clube);
+  const alClube = visible.filter(c=>c.janela==='alerta' &&  c.clube);
+  const atNao   = visible.filter(c=>c.janela==='atencao' && !c.clube);
+  const atClube = visible.filter(c=>c.janela==='atencao' &&  c.clube);
+
+  fill('#listAlNao', alNao, false, 'Ninguém aqui agora.');
+  fill('#listAlClube', alClube, false, 'Ninguém aqui agora.');
+  fill('#listAtNao', atNao, false, 'Ninguém aqui agora.');
+  fill('#listAtClube', atClube, false, 'Ninguém aqui agora.');
+  $('#nAlNao').textContent = alNao.length ? '· '+alNao.length : '';
+  $('#nAlClube').textContent = alClube.length ? '· '+alClube.length : '';
+  $('#nAtNao').textContent = atNao.length ? '· '+atNao.length : '';
+  $('#nAtClube').textContent = atClube.length ? '· '+atClube.length : '';
+
+  const secAg = $('#secAgendados');
+  if(parked.length){ secAg.hidden=false; fill('#listAgendados', parked, true, ''); }
+  else { secAg.hidden=true; }
+
+  const totAl = visible.filter(c=>c.janela==='alerta').length;
+  const totAt = visible.filter(c=>c.janela==='atencao').length;
   $('#counts').innerHTML =
-    `<span class="pill red"><b>${al.length}</b> alerta vermelho</span>`+
-    `<span class="pill amber"><b>${at.length}</b> em atenção</span>`+
-    `<span class="pill"><b>${al.length+at.length}</b> na lista pra convidar</span>`;
+    `<span class="pill red"><b>${totAl}</b> alerta vermelho</span>`+
+    `<span class="pill amber"><b>${totAt}</b> em atenção</span>`+
+    (parked.length?`<span class="pill green"><b>${parked.length}</b> agendados</span>`:'')+
+    `<span class="pill"><b>${totAl+totAt}</b> na lista pra convidar</span>`;
   if(DATA.exemplo){
     banner('sample', 'Envie a planilha de agendamentos acima para montar a lista de clientes a convidar.');
   }else{
-    banner('loaded', `Planilha carregada: ${DATA.lidos} agendamentos lidos, cálculo feito até hoje (${DATA.gerado}). ${totAl} em alerta + ${totAt} em atenção.`);
+    banner('loaded', `Planilha de ${DATA.gerado}: ${DATA.lidos} agendamentos lidos. ${totAl} em alerta + ${totAt} em atenção${parked.length?` · ${parked.length} agendados`:''}.`);
   }
   $('#foot').innerHTML =
     `"Dias" conta desde a última <b>comanda fechada</b> (status Finalizado) — agendamento e cancelamento não contam. `+
-    `${booked} cliente(s) na faixa já têm horário marcado (${hideBooked?'ocultos':'mostrados'}). `+
-    `"Conferir nº" = telefone sem o 9º dígito no cadastro, o link pode não abrir. `+
-    `Total: ${totAl} em vermelho + ${totAt} em atenção.`;
+    `Marque "Já foi agendado" no ⋯ pra tirar da lista; na próxima planilha, quem não tiver fechado comanda volta automaticamente. `+
+    `"Conferir nº" = telefone sem o 9º dígito no cadastro, o link pode não abrir.`;
 }
 $('#fBooked').addEventListener('change', render);
-$('#fClub').addEventListener('change', render);
 $('#msg').addEventListener('input', render);
 render();
 </script>
