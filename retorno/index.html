@@ -4,31 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Gehlen's Club — Retorno</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Barlow:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Figtree:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
 /* Layout: cabeçalho fixo + upload da planilha + mensagem editável + duas faixas (alerta/atenção) de cards com botão WhatsApp */
 :root{
-  --bg:#141210; --surface:#1e1b17; --surface-2:#262119; --line:#352f27;
-  --fg:#f4ede2; --muted:#a69a87; --accent:#d8a24a; --accent-ink:#1a140a;
-  --red:#e0534a; --red-bg:#2a1816; --amber:#d8a24a; --amber-bg:#261f12;
-  --green:#5fae7a; --green-bg:#16241a;
-  --sans:"Barlow",-apple-system,system-ui,Segoe UI,Roboto,sans-serif;
-  --head:"Oswald",var(--sans);
+  --bg:#f0eff2; --surface:#ffffff; --surface-2:#f4f3f7; --line:#e6e4ec;
+  --fg:#18171b; --muted:#716f7a; --accent:#c41e2a; --accent-ink:#981320;
+  --red:#c41e2a; --red-bg:#fbeceb; --amber:#b9800f; --amber-bg:#f6eeda;
+  --green:#1f9d57; --green-bg:#e8f4ec;
+  --sans:"Figtree",-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;
+  --head:"Oswald","Arial Narrow",system-ui,sans-serif;
   --num:ui-monospace,"SFMono-Regular",Menlo,monospace;
-}
-@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
-  --bg:#f5f1ea; --surface:#fffdf9; --surface-2:#f0e9dc; --line:#e2d8c6;
-  --fg:#241f18; --muted:#776c5a; --accent:#a9741c; --accent-ink:#fff;
-  --red:#c0392b; --red-bg:#fbeceb; --amber:#9a6d12; --amber-bg:#f6eeda;
-  --green:#2f7d4f; --green-bg:#e8f4ec; color-scheme:light;
-}}
-:root[data-theme="light"]{
-  --bg:#f5f1ea; --surface:#fffdf9; --surface-2:#f0e9dc; --line:#e2d8c6;
-  --fg:#241f18; --muted:#776c5a; --accent:#a9741c; --accent-ink:#fff;
-  --red:#c0392b; --red-bg:#fbeceb; --amber:#9a6d12; --amber-bg:#f6eeda;
-  --green:#2f7d4f; --green-bg:#e8f4ec; color-scheme:light;
+  color-scheme:light;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.5}
@@ -36,7 +25,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
 header{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--surface);border-bottom:1px solid var(--line);margin:0 calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:14px max(16px,env(safe-area-inset-left,0px)) 14px max(16px,env(safe-area-inset-right,0px))}
 .hrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:9px}
+.brand{display:flex;align-items:center;gap:9px;cursor:pointer}
+.mark{width:30px;height:30px;border-radius:9px;flex:none;background:linear-gradient(145deg,var(--accent),var(--accent-ink));display:grid;place-items:center;color:#fff;font-family:var(--head);font-weight:700;font-size:16px;box-shadow:0 2px 8px rgba(196,30,42,.45)}
 h1{font-family:var(--head);font-weight:600;letter-spacing:.5px;text-transform:uppercase;font-size:1.3rem;margin:0}
 .sub{color:var(--muted);font-size:.82rem}
 .counts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
@@ -74,7 +64,7 @@ section{margin-top:24px}
 .sdesc{color:var(--muted);font-size:.8rem;margin:0 0 12px}
 
 .list{display:flex;flex-direction:column;gap:10px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(18,16,22,.05),0 10px 26px rgba(18,16,22,.07);padding:13px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .card.alerta{border-left:4px solid var(--red)}
 .card.atencao{border-left:4px solid var(--amber)}
 .card.booked{opacity:.58}
@@ -127,7 +117,7 @@ section{margin-top:24px}
 <div class="wrap">
 <header>
   <div class="hrow">
-    <div class="brand"><h1>Retorno</h1></div>
+    <div class="brand"><div class="mark">G</div><h1>Retorno</h1></div>
     <span class="sub">Gehlen's Club · base de <span id="ger"></span></span>
   </div>
   <div class="counts" id="counts"></div>
