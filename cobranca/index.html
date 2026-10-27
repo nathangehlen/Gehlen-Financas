@@ -347,7 +347,27 @@ async function saveNoteCloud(email,text){
 let DONE=loadDone(), NOTES=loadNotes(), DATA=null, ACTIVE=null, LAST_ROWS=null;
 
 document.getElementById("stamp").textContent=new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"});
-document.getElementById("file").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;document.getElementById("fname").textContent="Arquivo: "+f.name;Papa.parse(f,{header:true,skipEmptyLines:true,complete:(res)=>{LAST_ROWS=res.data;reconciliar(res.data);}});});
+document.getElementById("file").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;document.getElementById("fname").textContent="Arquivo: "+f.name;Papa.parse(f,{header:true,skipEmptyLines:true,complete:(res)=>{LAST_ROWS=res.data;stashAssinantes(res.data);reconciliar(res.data);}});});
+
+// Guarda a lista de assinantes ativos (do Cash Barber) pro módulo Retorno usar,
+// pra ele saber quem é assinante DE VERDADE (e qual o plano), em vez da marcação
+// da agenda que fica desatualizada. Fica no mesmo navegador (mesmo domínio).
+function stashAssinantes(rows){
+  try{
+    const fk=(x)=>{const d=String(x||"").replace(/\D/g,"");return d.length>=10?d.slice(-10):"";};
+    const em=(x)=>String(x||"").trim().toLowerCase();
+    const byPhone={}, byEmail={}; let n=0;
+    (rows||[]).forEach(r=>{
+      const plano=String(r["Plano"]||r.plano||"").trim();
+      if(!plano||/Totalizado|R\$/i.test(plano)) return;      // pula linhas de total
+      const o={plano, nome:String(r["Cliente"]||r.nome||"").trim()};
+      const p=fk(r["Telefone"]||r.telefone); if(p) byPhone[p]=o;
+      const e=em(r["Email"]||r.email); if(e) byEmail[e]=o;
+      n++;
+    });
+    if(n) localStorage.setItem("gc_assinantes", JSON.stringify({updated:Date.now(), count:n, byPhone, byEmail}));
+  }catch(e){}
+}
 document.getElementById("reload").addEventListener("click",()=>{if(LAST_ROWS)reconciliar(LAST_ROWS);});
 
 // Base de clientes (com CPF) — fica só na memória, não é salva em lugar nenhum
