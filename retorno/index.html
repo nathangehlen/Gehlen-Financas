@@ -1,43 +1,364 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Gehlen's Club — Retorno</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Barlow:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
-  :root{--bg:#0c0b0e;--surface:#161419;--fg:#f4f2f7;--muted:#9a97a3;--line:rgba(255,255,255,.08);--accent:#c41e2a;--accent-ink:#981320;
-    --f-disp:"Oswald","Arial Narrow",system-ui,sans-serif;--f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif}
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);min-height:100vh;
-    padding:env(safe-area-inset-top,0) 16px calc(24px + env(safe-area-inset-bottom,0))}
-  header{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 10px}
-  .hwrap{max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .brand{display:flex;align-items:center;gap:9px}
-  .mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(145deg,var(--accent),var(--accent-ink));
-    display:grid;place-items:center;color:#fff;font-family:var(--f-disp);font-weight:700;font-size:16px}
-  .brand h1{margin:0;font-family:var(--f-disp);font-weight:600;font-size:15px;letter-spacing:.03em;text-transform:uppercase}
-  main{max-width:560px;margin:40px auto 0}
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:26px 22px;text-align:center}
-  .card .ic{font-size:40px;line-height:1;margin-bottom:12px}
-  .card h2{font-family:var(--f-disp);font-weight:600;letter-spacing:.02em;margin:0 0 8px;font-size:21px}
-  .card p{color:var(--muted);font-size:14px;line-height:1.5;margin:0 auto;max-width:360px}
-  .pill{display:inline-block;margin-top:16px;font-family:var(--f-disp);font-weight:600;letter-spacing:.08em;text-transform:uppercase;
-    font-size:11px;color:var(--accent);border:1px solid rgba(196,30,42,.45);border-radius:999px;padding:6px 12px}
+/* Layout: cabeçalho fixo + upload da planilha + mensagem editável + duas faixas (alerta/atenção) de cards com botão WhatsApp */
+:root{
+  --bg:#141210; --surface:#1e1b17; --surface-2:#262119; --line:#352f27;
+  --fg:#f4ede2; --muted:#a69a87; --accent:#d8a24a; --accent-ink:#1a140a;
+  --red:#e0534a; --red-bg:#2a1816; --amber:#d8a24a; --amber-bg:#261f12;
+  --green:#5fae7a; --green-bg:#16241a;
+  --sans:"Barlow",-apple-system,system-ui,Segoe UI,Roboto,sans-serif;
+  --head:"Oswald",var(--sans);
+  --num:ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#f5f1ea; --surface:#fffdf9; --surface-2:#f0e9dc; --line:#e2d8c6;
+  --fg:#241f18; --muted:#776c5a; --accent:#a9741c; --accent-ink:#fff;
+  --red:#c0392b; --red-bg:#fbeceb; --amber:#9a6d12; --amber-bg:#f6eeda;
+  --green:#2f7d4f; --green-bg:#e8f4ec; color-scheme:light;
+}}
+:root[data-theme="light"]{
+  --bg:#f5f1ea; --surface:#fffdf9; --surface-2:#f0e9dc; --line:#e2d8c6;
+  --fg:#241f18; --muted:#776c5a; --accent:#a9741c; --accent-ink:#fff;
+  --red:#c0392b; --red-bg:#fbeceb; --amber:#9a6d12; --amber-bg:#f6eeda;
+  --green:#2f7d4f; --green-bg:#e8f4ec; color-scheme:light;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--surface);border-bottom:1px solid var(--line);margin:0 calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:14px max(16px,env(safe-area-inset-left,0px)) 14px max(16px,env(safe-area-inset-right,0px))}
+.hrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:9px}
+h1{font-family:var(--head);font-weight:600;letter-spacing:.5px;text-transform:uppercase;font-size:1.3rem;margin:0}
+.sub{color:var(--muted);font-size:.82rem}
+.counts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.pill{font-size:.76rem;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid var(--line);display:inline-flex;gap:6px;align-items:center}
+.pill b{font-family:var(--num)}
+.pill.red{color:var(--red);border-color:var(--red);background:var(--red-bg)}
+.pill.amber{color:var(--amber);border-color:var(--amber);background:var(--amber-bg)}
+
+.upload{margin-top:18px;border:1.5px dashed var(--line);border-radius:12px;background:var(--surface);padding:18px 16px;text-align:center;cursor:pointer;transition:border-color .15s, background .15s}
+.upload:hover,.upload.drag{border-color:var(--accent);background:var(--surface-2)}
+.upload h3{font-family:var(--head);text-transform:uppercase;letter-spacing:.5px;font-size:.9rem;margin:0 0 4px;color:var(--accent)}
+.upload p{margin:0;color:var(--muted);font-size:.82rem}
+.upload .fname{color:var(--fg);font-size:.82rem;margin-top:8px;font-family:var(--num)}
+.upload input{display:none}
+.banner{margin-top:12px;font-size:.8rem;border-radius:8px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start}
+.banner.sample{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber)}
+.banner.loaded{background:var(--green-bg);color:var(--green);border:1px solid var(--green)}
+.banner.err{background:var(--red-bg);color:var(--red);border:1px solid var(--red)}
+
+.msgbox{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:18px}
+.msgbox label{font-family:var(--head);text-transform:uppercase;letter-spacing:.5px;font-size:.78rem;color:var(--accent);display:block;margin-bottom:6px}
+.msgbox textarea{width:100%;min-height:92px;resize:vertical;background:var(--surface-2);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit;font-size:.9rem}
+.msghint{color:var(--muted);font-size:.76rem;margin-top:8px}
+.msghint code{background:var(--surface-2);padding:1px 5px;border-radius:4px;font-family:var(--num)}
+
+.filters{display:flex;gap:16px;flex-wrap:wrap;margin:18px 0 6px;align-items:center}
+.filters label{display:inline-flex;gap:7px;align-items:center;font-size:.86rem;cursor:pointer;color:var(--muted)}
+.filters input{accent-color:var(--accent);width:16px;height:16px}
+
+section{margin-top:24px}
+.shead{display:flex;align-items:baseline;gap:9px;margin-bottom:4px}
+.shead h2{font-family:var(--head);text-transform:uppercase;letter-spacing:.6px;font-size:1.05rem;margin:0}
+.shead .dot{width:10px;height:10px;border-radius:50%}
+.red .dot{background:var(--red)} .amber .dot{background:var(--amber)}
+.sdesc{color:var(--muted);font-size:.8rem;margin:0 0 12px}
+
+.list{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.card.alerta{border-left:4px solid var(--red)}
+.card.atencao{border-left:4px solid var(--amber)}
+.card.booked{opacity:.58}
+.days{font-family:var(--num);font-weight:700;font-size:1.5rem;line-height:1;min-width:52px;text-align:center}
+.card.alerta .days{color:var(--red)} .card.atencao .days{color:var(--amber)}
+.days small{display:block;font-size:.6rem;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-top:3px}
+.info{flex:1;min-width:0}
+.name{font-weight:600;font-size:1rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:999px}
+.badge.club{background:var(--accent);color:var(--accent-ink)}
+.badge.booked{background:transparent;border:1px solid var(--green);color:var(--green)}
+.badge.warn{background:transparent;border:1px solid var(--red);color:var(--red)}
+.meta{color:var(--muted);font-size:.8rem;margin-top:3px;display:flex;gap:4px 12px;flex-wrap:wrap}
+.meta .tel{font-family:var(--num);cursor:pointer;border-bottom:1px dashed var(--muted)}
+.wa{flex-shrink:0;display:inline-flex;align-items:center;gap:7px;background:#25D366;color:#06301a;font-weight:700;font-size:.88rem;text-decoration:none;padding:9px 15px;border-radius:9px;border:none;cursor:pointer}
+.wa:hover{filter:brightness(1.07)}
+.wa svg{width:17px;height:17px}
+.empty{color:var(--muted);font-size:.85rem;padding:10px 0;font-style:italic}
+.foot{color:var(--muted);font-size:.75rem;margin-top:30px;border-top:1px solid var(--line);padding-top:14px}
+@media(max-width:460px){
+  .card{gap:10px}
+  .days{min-width:44px;font-size:1.3rem}
+  .wa{width:100%;justify-content:center;margin-top:4px}
+}
+
+/* Gate de login (mesmo login dos outros módulos) */
+#gate{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:20px;background:var(--bg)}
+#gate.show{display:flex}
+.gatebox{width:100%;max-width:340px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px 22px;text-align:center}
+.gatebox h2{font-family:var(--head);text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-size:1.2rem}
+.gatebox .gs{color:var(--muted);font-size:.82rem;margin:0 0 16px}
+.gatebox input{width:100%;background:var(--surface-2);color:var(--fg);border:1px solid var(--line);border-radius:9px;padding:11px;font:inherit;margin-bottom:10px}
+.gatebox button{width:100%;background:var(--accent);color:var(--accent-ink);border:none;border-radius:9px;padding:12px;font-family:var(--head);text-transform:uppercase;letter-spacing:.5px;font-weight:600;cursor:pointer}
+.gateerr{color:var(--red);font-size:.8rem;min-height:18px;margin-top:4px}
 </style>
 </head>
 <body>
-<header><div class="hwrap"><div class="brand"><div class="mark">G</div><h1>Retorno</h1></div></div></header>
-<main>
-  <div class="card">
-    <div class="ic">↩️</div>
-    <h2>Monitor de Retorno</h2>
-    <p>Aqui vai ficar o monitor de clientes sumidos — quem está há dias sem fechar comanda, pronto pra receber o convite de reagendamento pelo WhatsApp. Esta é a aba reservada dentro do app unificado; o conteúdo entra numa próxima etapa.</p>
-    <span class="pill">Em construção</span>
+
+<div id="gate">
+  <div class="gatebox">
+    <h2>Retorno</h2>
+    <p class="gs">Gehlen's Club · acesso restrito</p>
+    <input id="lg-email" type="email" inputmode="email" autocomplete="username" placeholder="E-mail">
+    <input id="lg-pass" type="password" autocomplete="current-password" placeholder="Senha">
+    <button id="lg-btn">Entrar</button>
+    <div id="lg-err" class="gateerr"></div>
   </div>
-</main>
+</div>
+
+<div class="wrap">
+<header>
+  <div class="hrow">
+    <div class="brand"><h1>Retorno</h1></div>
+    <span class="sub">Gehlen's Club · base de <span id="ger"></span></span>
+  </div>
+  <div class="counts" id="counts"></div>
+</header>
+
+<div class="upload" id="drop">
+  <h3>Enviar planilha de agendamentos</h3>
+  <p>Arraste o arquivo aqui ou clique para escolher. É o mesmo relatório que tu exporta da agenda (CSV), com os agendamentos dos últimos dias.</p>
+  <div class="fname" id="fname"></div>
+  <input type="file" id="file" accept=".csv,text/csv">
+</div>
+<div class="banner sample" id="banner"></div>
+
+<div class="msgbox">
+  <label for="msg">Mensagem do convite (vai no link do WhatsApp)</label>
+  <textarea id="msg">Opa, {nome}! Aqui é da Gehlen's Club. Faz um tempo que tu não vem, queria ver contigo pra gente agendar um horário e já marcar ele pra ti. E aproveitar pra ver se tá tudo certo com o aplicativo. 👊</textarea>
+  <div class="msghint">Use <code>{nome}</code> para o primeiro nome do cliente. Os botões abaixo abrem o WhatsApp já com essa mensagem carregada.</div>
+</div>
+
+<div class="filters">
+  <label><input type="checkbox" id="fBooked" checked> Ocultar quem já tem horário marcado</label>
+  <label><input type="checkbox" id="fClub"> Mostrar só assinantes do clube</label>
+</div>
+
+<section class="red">
+  <div class="shead red"><span class="dot"></span><h2>Alerta vermelho</h2></div>
+  <p class="sdesc">15 dias ou mais sem comanda fechada. Risco de perder o cliente — priorizar.</p>
+  <div class="list" id="listAlerta"></div>
+</section>
+
+<section class="amber">
+  <div class="shead amber"><span class="dot"></span><h2>Atenção</h2></div>
+  <p class="sdesc">12 a 14 dias sem comanda fechada. Encaixar conforme abre espaço na agenda.</p>
+  <div class="list" id="listAtencao"></div>
+</section>
+
+<p class="foot" id="foot"></p>
+</div>
+
+<script>
+/* ---------- Login compartilhado (mesmo Supabase/login dos outros módulos) ---------- */
+(function(){
+  var SB_URL="https://ppzeyivfymntbisprxsb.supabase.co";
+  var SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwemV5aXZmeW1udGJpc3ByeHNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMjE0MDcsImV4cCI6MjEwNjc5NzQwN30.bnr2FU-oOnuXlhiKcMZGgOiP0r1Dp0UDYOhRChGWE1Y";
+  var sb=window.supabase.createClient(SB_URL,SB_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+  var gate=document.getElementById("gate");
+  function show(s){ gate.classList.toggle("show",!!s); }
+  function doLogin(){
+    var em=(document.getElementById("lg-email").value||"").trim(), pw=document.getElementById("lg-pass").value||"";
+    var btn=document.getElementById("lg-btn"), err=document.getElementById("lg-err");
+    if(!em||!pw){ err.textContent="Preencha e-mail e senha."; return; }
+    btn.disabled=true; btn.textContent="Entrando…"; err.textContent="";
+    sb.auth.signInWithPassword({email:em,password:pw}).then(function(r){
+      btn.disabled=false; btn.textContent="Entrar";
+      if(r.error){ err.textContent="E-mail ou senha incorretos."; return; }
+      show(false);
+    }).catch(function(){ btn.disabled=false; btn.textContent="Entrar"; err.textContent="Erro ao entrar. Tente de novo."; });
+  }
+  document.getElementById("lg-btn").addEventListener("click",doLogin);
+  document.getElementById("lg-pass").addEventListener("keydown",function(e){ if(e.key==="Enter") doLogin(); });
+  sb.auth.onAuthStateChange(function(_e,session){ show(!session); });
+  sb.auth.getSession().then(function(r){ show(!(r.data&&r.data.session)); }).catch(function(){ show(true); });
+})();
+
+/* ---------- Monitor de retorno (roda no navegador a partir da planilha) ---------- */
+const SAMPLE = {"gerado":"—","exemplo":true,"clientes":[]};
+
+let DATA = SAMPLE;
+const $ = s => document.querySelector(s);
+
+const WAICON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.82 11.82 0 018.413 3.488 11.82 11.82 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.82 9.82 0 001.517 5.248l-.999 3.648 3.971-.999zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.074-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg>';
+
+function parseDate(s){
+  const m = String(s||'').trim().match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  return m ? new Date(+m[3], +m[2]-1, +m[1]) : null;
+}
+function fmtBR(d){ return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear(); }
+function fmtDM(d){ return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2); }
+function parseCliente(c){
+  const parts = String(c||'').split(' - ').map(p=>p.trim());
+  const nome = parts[0]||'';
+  const tel = parts.find(p=>/\d{4,}/.test(p) && !p.includes('@')) || '';
+  return {nome, tel};
+}
+function normTel(tel){
+  let d = String(tel||'').replace(/\D/g,'');
+  if((d.length===12||d.length===13) && d.startsWith('55')) d = d.slice(2); // tira código do país
+  if(d.length===10) d = d.slice(0,2)+'9'+d.slice(2);                       // faltou o 9º dígito
+  return {wa:'55'+d, ok:d.length===11};
+}
+function pickCol(keys, ...cands){
+  for(const c of cands){ const k = keys.find(k=>k.trim().toLowerCase()===c); if(k) return k; }
+  for(const c of cands){ const k = keys.find(k=>k.toLowerCase().includes(c)); if(k) return k; }
+  return null;
+}
+function computar(rows){
+  if(!rows.length) throw new Error('A planilha veio vazia.');
+  const keys = Object.keys(rows[0]);
+  const cCli = pickCol(keys,'cliente');
+  const cStatus = pickCol(keys,'status');          // "Status" (não "Status do cliente")
+  const cData = pickCol(keys,'data e hora','data');
+  const cClube = pickCol(keys,'acesso ao clube','clube');
+  const cProf = pickCol(keys,'profissional','profiss');
+  if(!cCli || !cStatus || !cData)
+    throw new Error('Não achei as colunas certas. Preciso de "Cliente", "Status" e "Data e hora".');
+
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const cli = new Map();
+  for(const r of rows){
+    const {nome, tel} = parseCliente(r[cCli]);
+    if(!tel) continue;
+    const dd = parseDate(r[cData]); if(!dd) continue;
+    const status = String(r[cStatus]||'').trim().toLowerCase();
+    let o = cli.get(tel);
+    if(!o){ o = {nome, tel, lastFin:null, future:null, clube:false, prof:''}; cli.set(tel,o); }
+    o.nome = nome;
+    if(cClube && String(r[cClube]||'').trim().toLowerCase()==='sim') o.clube = true;
+    if(status==='finalizado'){
+      if(!o.lastFin || dd>o.lastFin){ o.lastFin = dd; o.prof = cProf ? String(r[cProf]||'').trim() : ''; }
+    } else if(status==='agendado' && dd>hoje){
+      if(!o.future || dd<o.future) o.future = dd;
+    }
+  }
+  const out = [];
+  for(const o of cli.values()){
+    if(!o.lastFin) continue;
+    const dias = Math.floor((hoje - o.lastFin)/86400000);
+    if(dias < 12) continue;
+    const {wa, ok} = normTel(o.tel);
+    out.push({nome:o.nome, tel:o.tel, wa, tel_ok:ok, dias,
+      ultima:fmtBR(o.lastFin), clube:o.clube, prof:o.prof,
+      agendado:o.future?fmtDM(o.future):null,
+      janela: dias>=15 ? 'alerta' : 'atencao'});
+  }
+  out.sort((a,b)=> b.dias-a.dias || a.nome.localeCompare(b.nome));
+  return {gerado: fmtBR(hoje), exemplo:false, clientes: out, lidos: rows.length};
+}
+
+/* ---------- upload ---------- */
+const drop = $('#drop'), fileInput = $('#file');
+drop.addEventListener('click', ()=>fileInput.click());
+drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.classList.add('drag'); });
+drop.addEventListener('dragleave', ()=>drop.classList.remove('drag'));
+drop.addEventListener('drop', e=>{ e.preventDefault(); drop.classList.remove('drag'); if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); });
+
+function handleFile(file){
+  $('#fname').textContent = file.name;
+  Papa.parse(file, {header:true, skipEmptyLines:'greedy', complete:res=>{
+    try{
+      DATA = computar(res.data);
+      render();
+    }catch(err){
+      banner('err', 'Não consegui ler: '+err.message+' Confere se é o CSV certo da agenda.');
+    }
+  }, error:err=>banner('err','Falha ao abrir o arquivo: '+err.message)});
+}
+function banner(kind, html){
+  const b = $('#banner'); b.className = 'banner '+kind; b.innerHTML = html;
+}
+
+/* ---------- render ---------- */
+function firstName(n){ return (n.trim().split(/\s+/)[0]||n).replace(/^\w/, c=>c.toUpperCase()); }
+function waLink(c){
+  const m = $('#msg').value.replace(/\{nome\}/g, firstName(c.nome));
+  return 'https://wa.me/'+c.wa+'?text='+encodeURIComponent(m);
+}
+function esc(s){ return String(s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+function card(c){
+  const el = document.createElement('div');
+  el.className = 'card '+c.janela+(c.agendado?' booked':'');
+  el.innerHTML = `
+    <div class="days">${c.dias}<small>DIAS</small></div>
+    <div class="info">
+      <div class="name">${esc(c.nome)}
+        ${c.clube?'<span class="badge club">Clube</span>':''}
+        ${c.agendado?`<span class="badge booked">Já marcou ${c.agendado}</span>`:''}
+        ${!c.tel_ok?'<span class="badge warn">Conferir nº</span>':''}
+      </div>
+      <div class="meta">
+        <span class="tel" title="Clique para copiar">${esc(c.tel)}</span>
+        <span>Última: ${c.ultima}</span>
+        ${c.prof?`<span>${esc(c.prof)}</span>`:''}
+      </div>
+    </div>
+    <a class="wa" target="_blank" rel="noopener">${WAICON}WhatsApp</a>`;
+  const a = el.querySelector('.wa');
+  a.href = waLink(c);
+  a.addEventListener('click', ()=>{ setTimeout(()=>{ a.href = waLink(c); },0); });
+  el.querySelector('.tel').addEventListener('click', e=>{
+    navigator.clipboard?.writeText(c.tel).then(()=>{ e.target.textContent=c.tel+' ✓'; setTimeout(()=>e.target.textContent=c.tel,1200); }).catch(()=>{});
+  });
+  return el;
+}
+function fill(sel, arr, emptyMsg){
+  const box = $(sel); box.innerHTML='';
+  if(!arr.length){ box.innerHTML = `<div class="empty">${emptyMsg}</div>`; return; }
+  arr.forEach(c=>box.appendChild(card(c)));
+}
+function render(){
+  $('#ger').textContent = DATA.gerado + (DATA.exemplo ? '' : '');
+  const hideBooked = $('#fBooked').checked, clubOnly = $('#fClub').checked;
+  const keep = c => (!hideBooked || !c.agendado) && (!clubOnly || c.clube);
+  const al = DATA.clientes.filter(c=>c.janela==='alerta' && keep(c));
+  const at = DATA.clientes.filter(c=>c.janela==='atencao' && keep(c));
+  fill('#listAlerta', al, 'Ninguém neste filtro agora.');
+  fill('#listAtencao', at, 'Ninguém neste filtro agora.');
+  const totAl = DATA.clientes.filter(c=>c.janela==='alerta').length;
+  const totAt = DATA.clientes.filter(c=>c.janela==='atencao').length;
+  const booked = DATA.clientes.filter(c=>c.agendado).length;
+  $('#counts').innerHTML =
+    `<span class="pill red"><b>${al.length}</b> alerta vermelho</span>`+
+    `<span class="pill amber"><b>${at.length}</b> em atenção</span>`+
+    `<span class="pill"><b>${al.length+at.length}</b> na lista pra convidar</span>`;
+  if(DATA.exemplo){
+    banner('sample', 'Envie a planilha de agendamentos acima para montar a lista de clientes a convidar.');
+  }else{
+    banner('loaded', `Planilha carregada: ${DATA.lidos} agendamentos lidos, cálculo feito até hoje (${DATA.gerado}). ${totAl} em alerta + ${totAt} em atenção.`);
+  }
+  $('#foot').innerHTML =
+    `"Dias" conta desde a última <b>comanda fechada</b> (status Finalizado) — agendamento e cancelamento não contam. `+
+    `${booked} cliente(s) na faixa já têm horário marcado (${hideBooked?'ocultos':'mostrados'}). `+
+    `"Conferir nº" = telefone sem o 9º dígito no cadastro, o link pode não abrir. `+
+    `Total: ${totAl} em vermelho + ${totAt} em atenção.`;
+}
+$('#fBooked').addEventListener('change', render);
+$('#fClub').addEventListener('change', render);
+$('#msg').addEventListener('input', render);
+render();
+</script>
+
 <script>window.GC_MODULE="retorno";</script>
 <script src="/switch.js" defer></script>
 </body>
