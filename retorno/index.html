@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gehlen's Club — Retorno</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0c0b0e;--surface:#161419;--fg:#f4f2f7;--muted:#9a97a3;--line:rgba(255,255,255,.08);--accent:#c41e2a;--accent-ink:#981320;
+    --f-disp:"Oswald","Arial Narrow",system-ui,sans-serif;--f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);min-height:100vh;
+    padding:env(safe-area-inset-top,0) 16px calc(24px + env(safe-area-inset-bottom,0))}
+  header{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 10px}
+  .hwrap{max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .brand{display:flex;align-items:center;gap:9px}
+  .mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(145deg,var(--accent),var(--accent-ink));
+    display:grid;place-items:center;color:#fff;font-family:var(--f-disp);font-weight:700;font-size:16px}
+  .brand h1{margin:0;font-family:var(--f-disp);font-weight:600;font-size:15px;letter-spacing:.03em;text-transform:uppercase}
+  main{max-width:560px;margin:40px auto 0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:26px 22px;text-align:center}
+  .card .ic{font-size:40px;line-height:1;margin-bottom:12px}
+  .card h2{font-family:var(--f-disp);font-weight:600;letter-spacing:.02em;margin:0 0 8px;font-size:21px}
+  .card p{color:var(--muted);font-size:14px;line-height:1.5;margin:0 auto;max-width:360px}
+  .pill{display:inline-block;margin-top:16px;font-family:var(--f-disp);font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+    font-size:11px;color:var(--accent);border:1px solid rgba(196,30,42,.45);border-radius:999px;padding:6px 12px}
+</style>
+</head>
+<body>
+<header><div class="hwrap"><div class="brand"><div class="mark">G</div><h1>Retorno</h1></div></div></header>
+<main>
+  <div class="card">
+    <div class="ic">↩️</div>
+    <h2>Monitor de Retorno</h2>
+    <p>Aqui vai ficar o monitor de clientes sumidos — quem está há dias sem fechar comanda, pronto pra receber o convite de reagendamento pelo WhatsApp. Esta é a aba reservada dentro do app unificado; o conteúdo entra numa próxima etapa.</p>
+    <span class="pill">Em construção</span>
+  </div>
+</main>
+<script>window.GC_MODULE="retorno";</script>
+<script src="/switch.js" defer></script>
+</body>
+</html>
