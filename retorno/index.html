@@ -75,8 +75,10 @@ h1{font-family:var(--head);font-weight:600;letter-spacing:.5px;text-transform:up
 .busca label{font-family:var(--head);text-transform:uppercase;letter-spacing:.5px;font-size:.78rem;color:var(--accent);display:block;margin-bottom:6px}
 .busca input{width:100%;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:11px 13px;font:inherit;font-size:.95rem;box-shadow:var(--shadow)}
 .buscaRes{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-.bhit{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.bhit{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.bhit .binfo{flex:1;min-width:0}
 .bhit .bmeta{color:var(--muted);font-size:.82rem;margin-top:2px}
+@media(max-width:460px){.bhit .wa{flex:1;justify-content:center}}
 .btipo{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 7px;border-radius:999px;margin-left:6px}
 .btipo.cl{background:var(--accent);color:#fff}
 .btipo.av{background:transparent;border:1px solid var(--muted);color:var(--muted)}
@@ -492,7 +494,6 @@ function render(){
   $('#foot').innerHTML =
     `"Dias" conta desde a última <b>comanda fechada</b> (status Finalizado) — agendamento e cancelamento não contam. `+
     `<b>Assinante recorrente:</b> atenção 12–14 dias, alerta vermelho 15+. <b>One e avulso</b> (vêm 1x/mês): atenção 27–29, alerta vermelho 30+. `+
-    `Quem já tem horário marcado aparece com "Agenda DD/MM" e fica oculto — pra isso, ao exportar o relatório da agenda, deixe o período pegando também os próximos dias. `+
     `Marque "Já foi agendado" no ⋯ pra tirar da lista; na próxima planilha, quem não tiver fechado comanda volta automaticamente. `+
     `"Conferir nº" = telefone sem o 9º dígito no cadastro, o link pode não abrir.`;
 }
@@ -516,12 +517,22 @@ function renderBusca(){
   if(!q){ box.innerHTML=''; return; }
   const all = DATA.todos||[];
   const hits = all.filter(c=>c.nome.toLowerCase().includes(q)).slice(0,30);
+  box.innerHTML='';
   if(!hits.length){ box.innerHTML = `<div class="empty">Ninguém com "${esc(q)}" na planilha.</div>`; return; }
-  box.innerHTML = hits.map(c=>{
+  hits.forEach(c=>{
     const tipo = c.assinante ? (c.one?'One':'Clube') : 'Avulso';
-    return `<div class="bhit"><div><b>${esc(c.nome)}</b> <span class="btipo ${c.assinante?'cl':'av'}">${tipo}</span></div>`+
-      `<div class="bmeta">Última vez: <b>${c.ultima}</b> · ${c.dias} dias atrás</div></div>`;
-  }).join('');
+    const el = document.createElement('div');
+    el.className = 'bhit';
+    el.innerHTML =
+      `<div class="binfo"><div><b>${esc(c.nome)}</b> <span class="btipo ${c.assinante?'cl':'av'}">${tipo}</span>`+
+      `${!c.tel_ok?' <span class="btipo av">Conferir nº</span>':''}</div>`+
+      `<div class="bmeta">Última vez: <b>${c.ultima}</b> · ${c.dias} dias atrás</div></div>`+
+      `<a class="wa" target="_blank" rel="noopener">${WAICON}WhatsApp</a>`;
+    const a = el.querySelector('.wa');
+    a.href = waLink(c);
+    a.addEventListener('click', ()=>{ setTimeout(()=>{ a.href = waLink(c); },0); });
+    box.appendChild(el);
+  });
 }
 
 /* upload opcional da lista de assinantes (Cash Barber) direto aqui */
