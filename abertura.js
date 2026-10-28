@@ -150,16 +150,16 @@
     // campos: sempre 1+2; nos dias de extrato, também 3+4
     var fields = [
       { n: 1, tipo: "contratos", title: "1 · Contratos ativos (Cash Barber)", hint: "O mesmo CSV que você sobe na Cobrança.", accept: ".csv,text/csv" },
-      { n: 2, tipo: "agenda", title: "2 · Agendamentos / agenda", hint: "O relatório da agenda que o Retorno usa.", accept: ".csv,text/csv" }
+      { n: 2, tipo: "agenda", title: "2 · Agendamentos (últimos 30 dias)", hint: "O relatório de agendamentos dos últimos 30 dias (o que o Retorno usa).", accept: ".csv,text/csv" }
     ];
     if (needExtratos) {
       fields.push({ n: 3, tipo: "sicoob", title: "3 · Extrato Sicoob (empresa)", hint: "Extrato da conta da empresa (CSV, OFX ou PDF).", accept: ".csv,.ofx,.pdf,.txt,text/csv,application/pdf" });
       fields.push({ n: 4, tipo: "neon", title: "4 · Extrato Banco Neon (pessoa física)", hint: "Extrato da conta PF (CSV, OFX ou PDF).", accept: ".csv,.ofx,.pdf,.txt,text/csv,application/pdf" });
     }
 
-    var sub = needExtratos
-      ? 'Hoje também é dia dos <b>extratos</b> — envie os <b>4 arquivos</b> pra liberar Retorno, Cobrança e Caderneta.'
-      : 'Pra abrir <b>Retorno</b>, <b>Cobrança</b> e <b>Caderneta</b> hoje, envie os dois relatórios do dia. É só uma vez — depois disso qualquer aparelho já abre pronto.';
+    var n = fields.length;
+    var extra = needExtratos ? ' (hoje também é dia dos extratos)' : '';
+    var sub = 'Pra usar o sistema hoje — Finanças, Retorno, Cobrança e Caderneta — envie os <b>' + n + ' arquivos</b> abaixo' + extra + '. É só uma vez: depois disso qualquer aparelho já abre pronto.';
 
     var fieldsHTML = fields.map(function (f) {
       return '<div class="gcab-f" id="gcab-f' + f.n + '"><div class="gcab-t">' + f.title + '</div>'
