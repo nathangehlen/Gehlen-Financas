@@ -3,10 +3,11 @@
  * --------------------------------------------------------------------------
  * Na primeira vez que o dia é aberto (em QUALQUER aparelho), pede dois arquivos:
  *   1) Contratos ativos (Cash Barber)   2) Agendamentos / agenda (Retorno)
- * Os dois ficam salvos no Supabase (tabela public.abertura_dia, 1 linha por dia),
- * então qualquer aparelho que abrir naquele dia já pega tudo pronto — não precisa
- * subir de novo. Finanças NÃO carrega este arquivo (abre sempre, sem depender).
- * Retorno, Cobrança e Caderneta carregam e ficam travados até o dia ser aberto.
+ * Os dois ficam SÓ no Google Drive (via Edge Function to-drive). Qualquer aparelho
+ * que abrir naquele dia pergunta ao Drive se já tem os arquivos de hoje; se tiver,
+ * pega tudo pronto — não precisa subir de novo. Finanças carrega este arquivo mas
+ * a tela é pulável lá ("Agora não"); Retorno, Cobrança e Caderneta ficam travados
+ * até o dia ser aberto.
  *
  * Cada módulo pode definir window.GConAbertura = function({contratos, agenda}){...}
  * que é chamado assim que os dados do dia estão prontos (do banco ou recém-subidos).
@@ -14,8 +15,9 @@
  *   - gc_assinantes  (quem é assinante + plano — igual ao que a Cobrança grava)
  *   - gc_fones       (nome/telefone -> WhatsApp, pra Caderneta e Retorno)
  *
- * Tolerante a falha: se o Supabase não responder ou a tabela ainda não existir,
- * ele NÃO trava (abre normal e cada módulo segue com o upload manual de sempre).
+ * Se não dá pra confirmar que os arquivos do dia já estão no Drive (função fora
+ * do ar, erro, offline), ele MOSTRA a tela de abertura (pede os arquivos) em vez
+ * de abrir sem pedir — nos módulos sempre pede; no Financeiro dá pra pular.
  * ==========================================================================*/
 (function () {
   "use strict";
@@ -237,8 +239,9 @@
       // pergunta pro Drive (via função) se os arquivos de hoje já estão lá
       sb.functions.invoke("to-drive", { body: { action: "get", today: todayYMD() } }).then(function (r) {
         if (r && r.error) {
-          // função não publicada ou erro: NÃO trava, deixa o módulo seguir com upload manual
+          // função fora do ar ou erro: em vez de abrir sem pedir, mostra a tela (pede os arquivos)
           console.warn("[abertura] erro ao ler do Drive:", (r.error && r.error.message) || r.error);
+          showOverlay(sb);
           return;
         }
         var d = r && r.data;
@@ -248,7 +251,7 @@
         } else {
           showOverlay(sb); // ninguém abriu o dia ainda
         }
-      }).catch(function (e) { console.warn("[abertura] falha:", e); });
+      }).catch(function (e) { console.warn("[abertura] falha:", e); showOverlay(sb); });
     }
     sb.auth.getSession().then(function (r) { decidir(r.data && r.data.session); }).catch(function () {});
     sb.auth.onAuthStateChange(function (_e, session) { decidir(session); });
