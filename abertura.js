@@ -37,6 +37,9 @@
   function normName(n) {
     return String(n || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
   }
+  // Finanças (home) = tela some ao clicar "agora não"; nos módulos, leva pro Financeiro
+  function isHome() { return !/\/(retorno|cobranca|caderneta)(\/|$)/.test(location.pathname); }
+
   // "Nome - (DDD) 99999-9999 - email" -> {nome, tel}
   function parseCliente(c) {
     var parts = String(c || "").split(" - ").map(function (p) { return p.trim(); });
@@ -153,9 +156,13 @@
       +      '<input type="file" id="gcab-i2" accept=".csv,text/csv"><div class="gcab-done" id="gcab-d2" style="display:none"></div></div>'
       + '  <button class="gcab-btn" id="gcab-go" disabled>Liberar o dia</button>'
       + '  <div class="gcab-err" id="gcab-err"></div>'
-      + '  <a class="gcab-back" href="/">Agora não — ir pro Financeiro</a>'
+      + (isHome()
+          ? '  <button class="gcab-back" id="gcab-skip" type="button">Agora não — ir pro Financeiro</button>'
+          : '  <a class="gcab-back" href="/">Agora não — ir pro Financeiro</a>')
       + '</div>';
     document.body.appendChild(ov);
+    var skip = ov.querySelector("#gcab-skip");
+    if (skip) skip.addEventListener("click", function () { removeOverlay(); }); // no Financeiro, só fecha a tela
 
     var t1 = null, t2 = null;
     var i1 = ov.querySelector("#gcab-i1"), i2 = ov.querySelector("#gcab-i2");
