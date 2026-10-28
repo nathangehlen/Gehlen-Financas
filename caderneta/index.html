@@ -6,6 +6,7 @@
 <title>Gehlen's Club — Caderneta</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Figtree:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
 /* tema compartilhado com o Financeiro (mesma chave gc_theme, padrão escuro) */
 (function(){try{var t=localStorage.getItem("gc_theme")||"dark";document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();
@@ -94,6 +95,8 @@ section{margin-top:22px}
 .saldo small{display:block;font-size:.6rem;font-weight:600;letter-spacing:.5px;color:var(--muted)}
 .caret{color:var(--muted);transition:transform .15s}
 .cli.open .caret{transform:rotate(90deg)}
+.wabtn{flex:none;display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#25d366;color:#fff;text-decoration:none;box-shadow:0 2px 8px rgba(37,211,102,.4)}
+.wabtn:active{transform:scale(.94)}
 .itens{display:none;border-top:1px solid var(--line);padding:4px 14px 12px}
 .cli.open .itens{display:block}
 .item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
@@ -250,6 +253,30 @@ function diasAte(ymd){ const m=String(ymd||'').match(/^(\d{4})-(\d{2})-(\d{2})/)
 
 function setState(kind,msg){ const el=$('#state'); el.className='state '+kind; el.textContent=msg; }
 
+/* ---------- telefone/WhatsApp (vem da Abertura do dia: gc_fones) ---------- */
+const WAICON='<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="vertical-align:-2px"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.82 11.82 0 018.413 3.488 11.82 11.82 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.82 9.82 0 001.517 5.248l-.999 3.648 3.971-.999zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.074-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg>';
+function normNome(n){ return String(n||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim(); }
+function foneDoCliente(o){
+  try{ const F=JSON.parse(localStorage.getItem('gc_fones')||'null'); if(!F) return null;
+    const byK=F.byKey||{}, byN=F.byName||{};
+    if(o.tel && byK[telKey(o.tel)]) return byK[telKey(o.tel)];
+    const nn=normNome(o.cliente); if(nn && byN[nn]) return byN[nn];
+    return null;
+  }catch(e){ return null; }
+}
+function primeiroNome(n){ const p=String(n||'').trim().split(/\s+/)[0]||n; return p.charAt(0).toUpperCase()+p.slice(1); }
+function msgLembrete(o){
+  const nome=primeiroNome(o.cliente);
+  if(o.cobrarEm) return `Oi ${nome}, tudo certo? 😊 Vi aqui que tu tinha comentado de acertar aquele valor lá pro dia ${fmtDM2(o.cobrarEm)}. Consegue me confirmar se dá certo nesse dia mesmo? Qualquer coisa a gente ajeita 👍`;
+  return `Oi ${nome}, tudo certo? 😊 Passando só pra ver aquele valorzinho que ficou aberto aqui. Consegue me dar um retorno de quando dá pra acertar? Qualquer coisa a gente ajeita 👍`;
+}
+function waBtnHTML(o){
+  if(o.saldo<=0) return '';
+  const f=foneDoCliente(o); if(!f||!f.wa) return '';
+  const href='https://wa.me/'+f.wa+'?text='+encodeURIComponent(msgLembrete(o));
+  return `<a class="wabtn" href="${href}" target="_blank" rel="noopener" title="Chamar no WhatsApp">${WAICON}</a>`;
+}
+
 async function carregar(){
   setState('sync','Carregando a caderneta…');
   const {data,error}=await sb.from('caderneta').select('*').order('criado_em',{ascending:true});
@@ -355,6 +382,7 @@ function clienteCard(o){
   el.innerHTML=`
     <div class="clihead">
       <div class="nm">${esc(o.cliente)}${o.tel?`<small>${esc(o.tel)}</small>`:''}${cobrarBadge(o)}</div>
+      ${waBtnHTML(o)}
       <div class="saldo ${cls}">${o.saldo===0?'R$ 0,00':money(Math.abs(o.saldo))}<small>${lbl}</small></div>
       <span class="caret">▶</span>
     </div>
@@ -392,6 +420,7 @@ function clienteCard(o){
       </div>
     </div>`;
   el.querySelector('.clihead').addEventListener('click',()=>el.classList.toggle('open'));
+  const wb=el.querySelector('.wabtn'); if(wb) wb.addEventListener('click',e=>e.stopPropagation());
   const payInp=el.querySelector('.pay');
   el.querySelector('.bpay').addEventListener('click',async e=>{
     e.stopPropagation(); const v=parseVal(payInp.value); if(!(v>0)){ payInp.focus(); return; }
@@ -455,6 +484,11 @@ $('#busca').addEventListener('input',render);
 try{ $('#vence').value=hojeYMD(); }catch(e){}   // data do topo já vem com hoje
 </script>
 
+<script>
+/* quando a Abertura do dia carrega os telefones, re-renderiza pra aparecer o botão do WhatsApp */
+window.GConAbertura=function(){ try{ render(); }catch(e){} };
+</script>
+<script src="/abertura.js" defer></script>
 <script>window.GC_MODULE="caderneta";</script>
 <script src="/switch.js" defer></script>
 </body>
