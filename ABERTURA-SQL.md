@@ -12,14 +12,19 @@ arquivos, que são enviados pro Drive.
 
 ## Setup (uma vez)
 
-1. **Conta de serviço** no Google Cloud (Google Drive API ativada), com chave
-   JSON.
-2. As 4 pastas (dentro de "Relatórios do app (central)") **compartilhadas como
-   Editor** com o e-mail da conta de serviço.
-3. Secret no Supabase: **`GDRIVE_SA_KEY`** = conteúdo do .json da conta.
-4. Edge Function **`to-drive`** publicada (código em
-   `supabase/functions/to-drive/index.ts`). Faz `action:"put"` (guarda arquivo)
-   e `action:"get"` (lê os arquivos do dia do Drive).
+> **Importante:** quem grava no Drive é um **Apps Script** do próprio Nathan
+> (roda como ele, tem cota). A conta de serviço NÃO serve pra gravar numa conta
+> Gmail pessoal (erro 403 "Service Accounts do not have storage quota").
+
+1. **Apps Script** novo em script.google.com, com o código de
+   `google-apps-script/CodigoGS.gs`. Publicar como **App da Web**:
+   Executar como **EU (Nathan)**, Acesso **Qualquer pessoa**. Copiar a URL `/exec`.
+2. Secret no Supabase: **`APPS_SCRIPT_URL`** = essa URL `/exec`.
+3. Edge Function **`to-drive`** publicada (código em
+   `supabase/functions/to-drive/index.ts`). Agora é só uma **ponte**: repassa
+   `action:"put"` e `action:"get"` pro Apps Script.
+4. (A API do Google Drive precisa estar ativada no projeto do Google — foi o que
+   faltava no primeiro teste.)
 
 ## Pastas no Drive
 
