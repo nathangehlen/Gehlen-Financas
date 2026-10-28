@@ -199,17 +199,14 @@
     go.addEventListener("click", function () {
       if (!t1 || !t2) return;
       go.disabled = true; go.textContent = "Salvando…"; err.textContent = "";
-      var row = { data: todayYMD(), contratos: t1.text, agenda: t2.text, criado_por: (window.GCAB_ME || "") };
-      sb.from("abertura_dia").upsert(row, { onConflict: "data" }).then(function (r) {
-        if (r.error) {
+      // guarda os dois arquivos direto no Google Drive (nada fica no Supabase)
+      Promise.all([putDrive(sb, "contratos", t1), putDrive(sb, "agenda", t2)]).then(function (rs) {
+        var bad = rs.find(function (r) { return !r || r.error; });
+        if (bad) {
           go.disabled = false; go.textContent = "Liberar o dia";
-          if (/relation|does not exist|schema cache/i.test(r.error.message || ""))
-            err.textContent = "A tabela do dia ainda não existe no banco. Rode o SQL que o time passou e tente de novo.";
-          else err.textContent = "Não consegui salvar: " + r.error.message;
+          err.textContent = "Não consegui salvar no Drive. Confere se a função 'to-drive' foi publicada e o secret GDRIVE_SA_KEY está certo.";
           return;
         }
-        pushDrive(sb, "contratos", t1); // arquiva no Google Drive (não trava se falhar)
-        pushDrive(sb, "agenda", t2);
         aplicar(t1.text, t2.text);
         removeOverlay();
       }).catch(function (e) {
@@ -219,16 +216,11 @@
     });
   }
 
-  // Envia uma cópia do arquivo pro Google Drive (via Edge Function to-drive).
-  // É "manda e segue": se o Drive falhar, o dia já foi liberado assim mesmo.
-  function pushDrive(sb, tipo, o) {
-    try {
-      if (!o || !o.base64) return;
-      var nome = todayYMD() + " - " + (o.name || (tipo + ".csv"));
-      sb.functions.invoke("to-drive", { body: { tipo: tipo, filename: nome, mime: o.mime || "text/csv", base64: o.base64 } })
-        .then(function (r) { if (r && r.error) console.warn("[drive] " + tipo + ":", (r.error && r.error.message) || r.error); })
-        .catch(function (e) { console.warn("[drive] " + tipo + ":", e); });
-    } catch (e) {}
+  // Guarda o arquivo no Google Drive (via Edge Function to-drive, action "put").
+  // Devolve a promise do invoke pra quem chamou saber se deu certo.
+  function putDrive(sb, tipo, o) {
+    var nome = todayYMD() + " - " + ((o && o.name) || (tipo + ".csv"));
+    return sb.functions.invoke("to-drive", { body: { action: "put", tipo: tipo, filename: nome, mime: (o && o.mime) || "text/csv", base64: o && o.base64 } });
   }
   function removeOverlay() { if (ov && ov.parentNode) ov.parentNode.removeChild(ov); ov = null; }
 
@@ -242,16 +234,16 @@
       if (!(session && session.user)) return; // sem login, o gate de login do módulo cobre a tela
       ran = true;
       window.GCAB_ME = (session.user && session.user.email) || "";
-      sb.from("abertura_dia").select("contratos,agenda").eq("data", todayYMD()).maybeSingle().then(function (r) {
-        if (r.error) {
-          // tabela ainda não existe ou erro de rede: NÃO trava, deixa o módulo seguir com upload manual
-          if (!/relation|does not exist|schema cache/i.test(r.error.message || "")) {
-            console.warn("[abertura] erro ao consultar:", r.error.message);
-          }
+      // pergunta pro Drive (via função) se os arquivos de hoje já estão lá
+      sb.functions.invoke("to-drive", { body: { action: "get", today: todayYMD() } }).then(function (r) {
+        if (r && r.error) {
+          // função não publicada ou erro: NÃO trava, deixa o módulo seguir com upload manual
+          console.warn("[abertura] erro ao ler do Drive:", (r.error && r.error.message) || r.error);
           return;
         }
-        if (r.data && (r.data.contratos || r.data.agenda)) {
-          aplicar(r.data.contratos || "", r.data.agenda || "");
+        var d = r && r.data;
+        if (d && d.has) {
+          aplicar(d.contratos || "", d.agenda || "");
           removeOverlay();
         } else {
           showOverlay(sb); // ninguém abriu o dia ainda

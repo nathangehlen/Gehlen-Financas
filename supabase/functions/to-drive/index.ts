@@ -1,19 +1,18 @@
 // Supabase Edge Function: to-drive
 // -----------------------------------------------------------------------------
-// Recebe um arquivo (em base64) e envia pra pasta certa do Google Drive da
-// barbearia, usando uma CONTA DE SERVIÇO do Google. A chave da conta fica no
-// secret GDRIVE_SA_KEY (o JSON inteiro que você baixou no Google Cloud).
-//
-// Deploy: Supabase → Edge Functions → nova função "to-drive" → cola este código.
-// Secret: GDRIVE_SA_KEY = conteúdo do .json da conta de serviço.
+// Ponte com o Google Drive da barbearia, usando uma CONTA DE SERVIÇO.
+// A chave da conta fica no secret GDRIVE_SA_KEY (o JSON do Google Cloud).
 // As 4 pastas precisam estar compartilhadas (Editor) com o e-mail da conta.
 //
-// Chamada (do app): sb.functions.invoke("to-drive", { body: {
-//   tipo: "contratos" | "agenda" | "sicoob" | "neon",
-//   filename: "2026-10-28 - arquivo.csv",
-//   mime: "text/csv",
-//   base64: "<arquivo em base64>"
-// }})
+// Faz duas coisas (campo "action" no corpo):
+//  - action "put": guarda um arquivo (base64) na pasta certa do Drive.
+//  - action "get": lê do Drive os arquivos do dia (contratos + agenda) e devolve
+//                  o conteúdo. Assim NADA fica guardado no Supabase.
+//
+// Chamadas (do app):
+//   sb.functions.invoke("to-drive", { body: { action:"put",
+//     tipo:"contratos"|"agenda"|"sicoob"|"neon", filename, mime, base64 } })
+//   sb.functions.invoke("to-drive", { body: { action:"get", today:"2026-10-28" } })
 // -----------------------------------------------------------------------------
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -99,17 +98,47 @@ async function uploadToDrive(token: string, folderId: string, name: string, mime
   return j;
 }
 
+// Acha o arquivo mais recente de uma pasta cujo nome contém "marca" (ex.: a data)
+// e devolve o conteúdo em texto. Se não achar, devolve "".
+async function readLatestFromDrive(token: string, folderId: string, marca: string): Promise<string> {
+  const q = `'${folderId}' in parents and name contains '${marca}' and trashed = false`;
+  const url = "https://www.googleapis.com/drive/v3/files?orderBy=modifiedTime desc&pageSize=1&fields=files(id,name)&q=" + encodeURIComponent(q);
+  const res = await fetch(url, { headers: { "Authorization": "Bearer " + token } });
+  const j = await res.json();
+  if (!res.ok) throw new Error("list drive: " + JSON.stringify(j));
+  const f = j.files && j.files[0];
+  if (!f) return "";
+  const dl = await fetch("https://www.googleapis.com/drive/v3/files/" + f.id + "?alt=media", {
+    headers: { "Authorization": "Bearer " + token },
+  });
+  if (!dl.ok) throw new Error("download drive: " + dl.status);
+  return await dl.text();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "use POST" }, 405);
   try {
-    const { tipo, filename, mime, base64 } = await req.json();
-    const folderId = FOLDERS[String(tipo)];
-    if (!folderId) return json({ error: "tipo invalido: " + tipo }, 400);
-    if (!base64) return json({ error: "sem arquivo" }, 400);
     const sa = JSON.parse(Deno.env.get("GDRIVE_SA_KEY") || "{}");
     if (!sa.client_email || !sa.private_key) throw new Error("GDRIVE_SA_KEY ausente ou invalido");
     const token = await getAccessToken(sa);
+    const body = await req.json();
+    const action = body.action || "put";
+
+    if (action === "get") {
+      // lê os arquivos do dia (contratos + agenda) direto do Drive
+      const marca = String(body.today || "");
+      if (!marca) return json({ error: "sem data (today)" }, 400);
+      const contratos = await readLatestFromDrive(token, FOLDERS.contratos, marca);
+      const agenda = await readLatestFromDrive(token, FOLDERS.agenda, marca);
+      return json({ ok: true, has: !!(contratos && agenda), contratos, agenda });
+    }
+
+    // action "put": guarda o arquivo na pasta certa
+    const { tipo, filename, mime, base64 } = body;
+    const folderId = FOLDERS[String(tipo)];
+    if (!folderId) return json({ error: "tipo invalido: " + tipo }, 400);
+    if (!base64) return json({ error: "sem arquivo" }, 400);
     const r = await uploadToDrive(token, folderId, filename || ("arquivo-" + Date.now()), mime || "application/octet-stream", b64ToBytes(base64));
     return json({ ok: true, id: r.id, name: r.name });
   } catch (e) {

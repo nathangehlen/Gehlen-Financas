@@ -1,56 +1,41 @@
-# Abertura do dia — SQL pra rodar no Supabase (projeto do Finanças: ppzeyivfymntbisprxsb)
+# Abertura do dia — como está montado
 
-A "Abertura do dia" guarda, uma vez por dia, os dois relatórios enviados
-(contratos ativos do Cash Barber + agenda do Retorno) numa tabela nova. Assim,
-quem enviar **uma vez em qualquer aparelho** libera o dia pra **todos** os
-aparelhos — ninguém precisa subir de novo.
+Os dois relatórios do dia (contratos ativos do Cash Barber + agenda do Retorno)
+**ficam só no Google Drive** — nada é guardado no Supabase (pra não ocupar
+espaço). Quando qualquer aparelho abre o dia, o app pergunta pra Edge Function
+`to-drive` se os arquivos de hoje já estão no Drive; se estiverem, ela lê e
+devolve o conteúdo; se não, aparece a tela "Abertura do dia" pedindo os 2
+arquivos, que são enviados pro Drive.
 
-Rode este SQL uma vez no **SQL Editor** do Supabase (projeto do Finanças) e
-recarregue o app.
+**Não precisa de tabela nova no banco.** (Se em algum momento a tabela
+`abertura_dia` chegou a ser criada, pode apagar — não é usada.)
 
-```sql
--- 1 linha por dia; subir de novo substitui (upsert pela data)
-create table if not exists public.abertura_dia (
-  data        date primary key,
-  contratos   text,                 -- CSV dos contratos ativos (Cash Barber)
-  agenda      text,                 -- CSV da agenda (Retorno)
-  criado_por  text,
-  criado_em   timestamptz not null default now()
-);
+## Setup (uma vez)
 
-alter table public.abertura_dia enable row level security;
+1. **Conta de serviço** no Google Cloud (Google Drive API ativada), com chave
+   JSON.
+2. As 4 pastas (dentro de "Relatórios do app (central)") **compartilhadas como
+   Editor** com o e-mail da conta de serviço.
+3. Secret no Supabase: **`GDRIVE_SA_KEY`** = conteúdo do .json da conta.
+4. Edge Function **`to-drive`** publicada (código em
+   `supabase/functions/to-drive/index.ts`). Faz `action:"put"` (guarda arquivo)
+   e `action:"get"` (lê os arquivos do dia do Drive).
 
--- só quem está logado pode ver e enviar
-create policy "abertura_select_auth" on public.abertura_dia
-  for select to authenticated using (true);
-create policy "abertura_insert_auth" on public.abertura_dia
-  for insert to authenticated with check (true);
-create policy "abertura_update_auth" on public.abertura_dia
-  for update to authenticated using (true) with check (true);
-```
+## Pastas no Drive
 
-Se der erro dizendo que a policy já existe (código 42710), é porque já rodou
-antes — pode ignorar, está tudo certo.
+Projeto Gehlens Club → **Relatórios do app (central)**:
+- `1 - Contratos ativos (Cash Barber)` — id 1Fc3rYj-1vJlz6TrEHbcIuSTZKVN69awb
+- `2 - Agenda / Retorno` — id 1SWshe99UwXszwhS7_nZ8fve0K-rwhrjf
+- `3 - Extratos Sicoob (empresa)` — id 19oX7m_P048HODo33auJFDj12JwqMRGQb
+- `4 - Extratos Banco Neon (PF)` — id 1v542qwI_FcP2QEkyV1YaFJ7-DDwrDIxq
 
-## Como funciona
+## Observações
 
-- **Finanças** abre sempre, não depende de nada.
-- **Retorno, Cobrança e Caderneta** ficam travados até o dia ser aberto. Na
-  primeira vez do dia, aparece a tela "Abertura do dia" pedindo os dois CSVs.
-  Depois de enviar, destravam os três — em qualquer aparelho naquele dia.
-- Os dois arquivos ficam salvos aqui (texto). Cada aparelho lê a agenda e
-  recalcula os "dias sem vir" com a data de hoje, e cruza os contratos com o
-  Asaas ao vivo — então o dado é sempre atual.
-- Da lista de contratos + agenda, o sistema monta o telefone de cada cliente e
-  deixa um **botão de WhatsApp** na Caderneta, com mensagem de lembrete pronta.
-
-Enquanto este SQL não for rodado, o app **não trava** — cada módulo continua
-funcionando com o upload manual de sempre (como era antes).
-
-## Limpeza (opcional, mais pra frente)
-
-A tabela guarda 1 linha por dia. Se um dia quiser limpar o histórico antigo:
-
-```sql
-delete from public.abertura_dia where data < current_date - interval '30 days';
-```
+- Finanças abre sempre (não depende de nada). Retorno/Cobrança/Caderneta ficam
+  travados até o dia ser aberto.
+- Cada aparelho lê a agenda e recalcula os "dias sem vir" com a data de hoje, e
+  cruza os contratos com o Asaas ao vivo — dado sempre atual.
+- Se a função não estiver publicada ou o Drive não responder, o app **não
+  trava**: cada módulo segue com o upload manual de sempre.
+- Os arquivos são nomeados com a data (ex.: `2026-10-28 - arquivo.csv`), então
+  fica o histórico por dia nas pastas.
