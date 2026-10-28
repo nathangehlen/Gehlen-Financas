@@ -634,6 +634,19 @@ function receberEditor(c,div){
   return ed;
 }
 </script>
+<script>
+/* Abertura do dia: quando os contratos do dia chegam (do banco ou recém-subidos),
+   processa igual a um upload manual do Cash Barber. */
+window.GConAbertura=function(d){
+  try{
+    if(!d||!d.contratos) return;
+    Papa.parse(d.contratos,{header:true,skipEmptyLines:true,complete:(res)=>{
+      try{ LAST_ROWS=res.data; stashAssinantes(res.data); reconciliar(res.data); }catch(e){}
+    }});
+  }catch(e){}
+};
+</script>
+<script src="/abertura.js" defer></script>
 <script>window.GC_MODULE="cobranca";</script>
 <script src="/switch.js" defer></script>
 </body>
