@@ -164,35 +164,42 @@
     var skip = ov.querySelector("#gcab-skip");
     if (skip) skip.addEventListener("click", function () { removeOverlay(); }); // no Financeiro, só fecha a tela
 
-    var t1 = null, t2 = null;
+    var t1 = null, t2 = null; // cada um: {text, base64, name, mime}
     var i1 = ov.querySelector("#gcab-i1"), i2 = ov.querySelector("#gcab-i2");
     var go = ov.querySelector("#gcab-go"), err = ov.querySelector("#gcab-err");
     function readFile(input, cb) {
-      var f = input.files[0]; if (!f) { cb(null, null); return; }
+      var f = input.files[0]; if (!f) { cb(null); return; }
       var rd = new FileReader();
-      rd.onload = function () { cb(String(rd.result || ""), f.name); };
-      rd.onerror = function () { cb(null, null); };
-      rd.readAsText(f);
+      rd.onload = function () {
+        try {
+          var buf = new Uint8Array(rd.result);
+          var text = new TextDecoder("utf-8").decode(buf);
+          var bin = ""; for (var i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+          cb({ text: text, base64: btoa(bin), name: f.name, mime: f.type || "text/csv" });
+        } catch (e) { cb(null); }
+      };
+      rd.onerror = function () { cb(null); };
+      rd.readAsArrayBuffer(f);
     }
     function refresh() { go.disabled = !(t1 && t2); }
     i1.addEventListener("change", function () {
-      readFile(i1, function (txt, name) {
-        t1 = txt; var f = ov.querySelector("#gcab-f1"), d = ov.querySelector("#gcab-d1");
-        if (txt) { f.classList.add("ok"); d.style.display = "block"; d.textContent = "✓ " + (name || "arquivo"); }
+      readFile(i1, function (o) {
+        t1 = o; var f = ov.querySelector("#gcab-f1"), d = ov.querySelector("#gcab-d1");
+        if (o) { f.classList.add("ok"); d.style.display = "block"; d.textContent = "✓ " + (o.name || "arquivo"); }
         refresh();
       });
     });
     i2.addEventListener("change", function () {
-      readFile(i2, function (txt, name) {
-        t2 = txt; var f = ov.querySelector("#gcab-f2"), d = ov.querySelector("#gcab-d2");
-        if (txt) { f.classList.add("ok"); d.style.display = "block"; d.textContent = "✓ " + (name || "arquivo"); }
+      readFile(i2, function (o) {
+        t2 = o; var f = ov.querySelector("#gcab-f2"), d = ov.querySelector("#gcab-d2");
+        if (o) { f.classList.add("ok"); d.style.display = "block"; d.textContent = "✓ " + (o.name || "arquivo"); }
         refresh();
       });
     });
     go.addEventListener("click", function () {
       if (!t1 || !t2) return;
       go.disabled = true; go.textContent = "Salvando…"; err.textContent = "";
-      var row = { data: todayYMD(), contratos: t1, agenda: t2, criado_por: (window.GCAB_ME || "") };
+      var row = { data: todayYMD(), contratos: t1.text, agenda: t2.text, criado_por: (window.GCAB_ME || "") };
       sb.from("abertura_dia").upsert(row, { onConflict: "data" }).then(function (r) {
         if (r.error) {
           go.disabled = false; go.textContent = "Liberar o dia";
@@ -201,13 +208,27 @@
           else err.textContent = "Não consegui salvar: " + r.error.message;
           return;
         }
-        aplicar(t1, t2);
+        pushDrive(sb, "contratos", t1); // arquiva no Google Drive (não trava se falhar)
+        pushDrive(sb, "agenda", t2);
+        aplicar(t1.text, t2.text);
         removeOverlay();
       }).catch(function (e) {
         go.disabled = false; go.textContent = "Liberar o dia";
         err.textContent = "Falha de conexão ao salvar. Tente de novo.";
       });
     });
+  }
+
+  // Envia uma cópia do arquivo pro Google Drive (via Edge Function to-drive).
+  // É "manda e segue": se o Drive falhar, o dia já foi liberado assim mesmo.
+  function pushDrive(sb, tipo, o) {
+    try {
+      if (!o || !o.base64) return;
+      var nome = todayYMD() + " - " + (o.name || (tipo + ".csv"));
+      sb.functions.invoke("to-drive", { body: { tipo: tipo, filename: nome, mime: o.mime || "text/csv", base64: o.base64 } })
+        .then(function (r) { if (r && r.error) console.warn("[drive] " + tipo + ":", (r.error && r.error.message) || r.error); })
+        .catch(function (e) { console.warn("[drive] " + tipo + ":", e); });
+    } catch (e) {}
   }
   function removeOverlay() { if (ov && ov.parentNode) ov.parentNode.removeChild(ov); ov = null; }
 
