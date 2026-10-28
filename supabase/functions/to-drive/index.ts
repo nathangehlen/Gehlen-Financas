@@ -115,6 +115,26 @@ async function readLatestFromDrive(token: string, folderId: string, marca: strin
   return await dl.text();
 }
 
+// Pega a data (YYYY-MM-DD, do nome do arquivo) do arquivo mais recente de uma pasta.
+// Usada pra saber quando foi o último extrato (cadência de 3 em 3 dias).
+async function latestDateInFolder(token: string, folderId: string): Promise<string> {
+  const q = `'${folderId}' in parents and trashed = false`;
+  const url = "https://www.googleapis.com/drive/v3/files?orderBy=modifiedTime desc&pageSize=1&fields=files(id,name)&q=" + encodeURIComponent(q);
+  const res = await fetch(url, { headers: { "Authorization": "Bearer " + token } });
+  const j = await res.json();
+  if (!res.ok) return "";
+  const f = j.files && j.files[0];
+  const m = f && String(f.name || "").match(/(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : "";
+}
+
+// Dias entre duas datas "YYYY-MM-DD" (b - a). Datas inválidas -> número grande.
+function daysBetween(a: string, b: string): number {
+  const da = Date.parse(a + "T00:00:00Z"), db = Date.parse(b + "T00:00:00Z");
+  if (isNaN(da) || isNaN(db)) return 9999;
+  return Math.round((db - da) / 86400000);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "use POST" }, 405);
@@ -131,7 +151,12 @@ serve(async (req) => {
       if (!marca) return json({ error: "sem data (today)" }, 400);
       const contratos = await readLatestFromDrive(token, FOLDERS.contratos, marca);
       const agenda = await readLatestFromDrive(token, FOLDERS.agenda, marca);
-      return json({ ok: true, has: !!(contratos && agenda), contratos, agenda });
+      // dia de extrato? (a cada 3 dias; se nunca subiu nenhum, hoje já conta)
+      const lastSic = await latestDateInFolder(token, FOLDERS.sicoob);
+      const lastNeon = await latestDateInFolder(token, FOLDERS.neon);
+      const lastExtrato = [lastSic, lastNeon].filter(Boolean).sort().pop() || "";
+      const extratoDay = !lastExtrato || daysBetween(lastExtrato, marca) >= 3;
+      return json({ ok: true, has: !!(contratos && agenda), contratos, agenda, extratoDay, extratoLast: lastExtrato });
     }
 
     // action "put": guarda o arquivo na pasta certa

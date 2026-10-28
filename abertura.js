@@ -141,21 +141,38 @@
       +   'font:600 .82rem/1 var(--head,"Oswald",sans-serif);letter-spacing:.04em;padding:14px 0 2px;cursor:pointer;text-decoration:none}';
     document.head.appendChild(st);
   }
-  function showOverlay(sb) {
+  // needExtratos = true quando é "dia de extrato" (a cada 3 dias): pede os 4 arquivos.
+  function showOverlay(sb, needExtratos) {
     injectCSS();
-    if (ov) return;
-    ov = document.createElement("div"); ov.className = "gcab-ov";
+    var modo = needExtratos ? "1" : "0";
+    if (ov) { if (ov.getAttribute("data-ext") === modo) return; removeOverlay(); } // troca de modo recria
+
+    // campos: sempre 1+2; nos dias de extrato, também 3+4
+    var fields = [
+      { n: 1, tipo: "contratos", title: "1 · Contratos ativos (Cash Barber)", hint: "O mesmo CSV que você sobe na Cobrança.", accept: ".csv,text/csv" },
+      { n: 2, tipo: "agenda", title: "2 · Agendamentos / agenda", hint: "O relatório da agenda que o Retorno usa.", accept: ".csv,text/csv" }
+    ];
+    if (needExtratos) {
+      fields.push({ n: 3, tipo: "sicoob", title: "3 · Extrato Sicoob (empresa)", hint: "Extrato da conta da empresa (CSV, OFX ou PDF).", accept: ".csv,.ofx,.pdf,.txt,text/csv,application/pdf" });
+      fields.push({ n: 4, tipo: "neon", title: "4 · Extrato Banco Neon (pessoa física)", hint: "Extrato da conta PF (CSV, OFX ou PDF).", accept: ".csv,.ofx,.pdf,.txt,text/csv,application/pdf" });
+    }
+
+    var sub = needExtratos
+      ? 'Hoje também é dia dos <b>extratos</b> — envie os <b>4 arquivos</b> pra liberar Retorno, Cobrança e Caderneta.'
+      : 'Pra abrir <b>Retorno</b>, <b>Cobrança</b> e <b>Caderneta</b> hoje, envie os dois relatórios do dia. É só uma vez — depois disso qualquer aparelho já abre pronto.';
+
+    var fieldsHTML = fields.map(function (f) {
+      return '<div class="gcab-f" id="gcab-f' + f.n + '"><div class="gcab-t">' + f.title + '</div>'
+        + '<div class="gcab-h">' + f.hint + '</div>'
+        + '<input type="file" id="gcab-i' + f.n + '" accept="' + f.accept + '"><div class="gcab-done" id="gcab-d' + f.n + '" style="display:none"></div></div>';
+    }).join("");
+
+    ov = document.createElement("div"); ov.className = "gcab-ov"; ov.setAttribute("data-ext", modo);
     ov.innerHTML = ''
       + '<div class="gcab-box">'
       + '  <h2>Abertura do dia</h2>'
-      + '  <p class="gcab-s">Pra abrir <b>Retorno</b>, <b>Cobrança</b> e <b>Caderneta</b> hoje, envie os dois relatórios do dia. '
-      +      'É só uma vez — depois disso qualquer aparelho já abre pronto.</p>'
-      + '  <div class="gcab-f" id="gcab-f1"><div class="gcab-t">1 · Contratos ativos (Cash Barber)</div>'
-      +      '<div class="gcab-h">O mesmo CSV que você sobe na Cobrança.</div>'
-      +      '<input type="file" id="gcab-i1" accept=".csv,text/csv"><div class="gcab-done" id="gcab-d1" style="display:none"></div></div>'
-      + '  <div class="gcab-f" id="gcab-f2"><div class="gcab-t">2 · Agendamentos / agenda</div>'
-      +      '<div class="gcab-h">O relatório da agenda que o Retorno usa.</div>'
-      +      '<input type="file" id="gcab-i2" accept=".csv,text/csv"><div class="gcab-done" id="gcab-d2" style="display:none"></div></div>'
+      + '  <p class="gcab-s">' + sub + '</p>'
+      + fieldsHTML
       + '  <button class="gcab-btn" id="gcab-go" disabled>Liberar o dia</button>'
       + '  <div class="gcab-err" id="gcab-err"></div>'
       + (isHome()
@@ -166,8 +183,7 @@
     var skip = ov.querySelector("#gcab-skip");
     if (skip) skip.addEventListener("click", function () { removeOverlay(); }); // no Financeiro, só fecha a tela
 
-    var t1 = null, t2 = null; // cada um: {text, base64, name, mime}
-    var i1 = ov.querySelector("#gcab-i1"), i2 = ov.querySelector("#gcab-i2");
+    var data = {}; // n -> {text, base64, name, mime}
     var go = ov.querySelector("#gcab-go"), err = ov.querySelector("#gcab-err");
     function readFile(input, cb) {
       var f = input.files[0]; if (!f) { cb(null); return; }
@@ -177,39 +193,38 @@
           var buf = new Uint8Array(rd.result);
           var text = new TextDecoder("utf-8").decode(buf);
           var bin = ""; for (var i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
-          cb({ text: text, base64: btoa(bin), name: f.name, mime: f.type || "text/csv" });
+          cb({ text: text, base64: btoa(bin), name: f.name, mime: f.type || "application/octet-stream" });
         } catch (e) { cb(null); }
       };
       rd.onerror = function () { cb(null); };
       rd.readAsArrayBuffer(f);
     }
-    function refresh() { go.disabled = !(t1 && t2); }
-    i1.addEventListener("change", function () {
-      readFile(i1, function (o) {
-        t1 = o; var f = ov.querySelector("#gcab-f1"), d = ov.querySelector("#gcab-d1");
-        if (o) { f.classList.add("ok"); d.style.display = "block"; d.textContent = "✓ " + (o.name || "arquivo"); }
-        refresh();
-      });
-    });
-    i2.addEventListener("change", function () {
-      readFile(i2, function (o) {
-        t2 = o; var f = ov.querySelector("#gcab-f2"), d = ov.querySelector("#gcab-d2");
-        if (o) { f.classList.add("ok"); d.style.display = "block"; d.textContent = "✓ " + (o.name || "arquivo"); }
-        refresh();
+    function todosOk() { return fields.every(function (f) { return data[f.n]; }); }
+    function refresh() { go.disabled = !todosOk(); }
+    fields.forEach(function (f) {
+      var inp = ov.querySelector("#gcab-i" + f.n);
+      inp.addEventListener("change", function () {
+        readFile(inp, function (o) {
+          data[f.n] = o;
+          var fe = ov.querySelector("#gcab-f" + f.n), de = ov.querySelector("#gcab-d" + f.n);
+          if (o) { fe.classList.add("ok"); de.style.display = "block"; de.textContent = "✓ " + (o.name || "arquivo"); }
+          refresh();
+        });
       });
     });
     go.addEventListener("click", function () {
-      if (!t1 || !t2) return;
+      if (!todosOk()) return;
       go.disabled = true; go.textContent = "Salvando…"; err.textContent = "";
-      // guarda os dois arquivos direto no Google Drive (nada fica no Supabase)
-      Promise.all([putDrive(sb, "contratos", t1), putDrive(sb, "agenda", t2)]).then(function (rs) {
+      // guarda todos os arquivos direto no Google Drive (nada fica no Supabase)
+      var ups = fields.map(function (f) { return putDrive(sb, f.tipo, data[f.n]); });
+      Promise.all(ups).then(function (rs) {
         var bad = rs.find(function (r) { return !r || r.error; });
         if (bad) {
           go.disabled = false; go.textContent = "Liberar o dia";
           err.textContent = "Não consegui salvar no Drive. Confere se a função 'to-drive' foi publicada e o secret GDRIVE_SA_KEY está certo.";
           return;
         }
-        aplicar(t1.text, t2.text);
+        aplicar(data[1].text, data[2].text); // só contratos+agenda alimentam o app; extratos ficam guardados
         removeOverlay();
       }).catch(function (e) {
         go.disabled = false; go.textContent = "Liberar o dia";
@@ -239,19 +254,21 @@
       // pergunta pro Drive (via função) se os arquivos de hoje já estão lá
       sb.functions.invoke("to-drive", { body: { action: "get", today: todayYMD() } }).then(function (r) {
         if (r && r.error) {
-          // função fora do ar ou erro: em vez de abrir sem pedir, mostra a tela (pede os arquivos)
+          // função fora do ar ou erro: em vez de abrir sem pedir, mostra a tela (pede os 2 arquivos base)
           console.warn("[abertura] erro ao ler do Drive:", (r.error && r.error.message) || r.error);
-          showOverlay(sb);
+          showOverlay(sb, false);
           return;
         }
         var d = r && r.data;
-        if (d && d.has) {
+        var extDay = !!(d && d.extratoDay); // hoje é dia de extrato? (a cada 3 dias)
+        if (d && d.has && !extDay) {
           aplicar(d.contratos || "", d.agenda || "");
           removeOverlay();
         } else {
-          showOverlay(sb); // ninguém abriu o dia ainda
+          // falta arquivo do dia, OU é dia de extrato (aí pede os 4)
+          showOverlay(sb, extDay);
         }
-      }).catch(function (e) { console.warn("[abertura] falha:", e); showOverlay(sb); });
+      }).catch(function (e) { console.warn("[abertura] falha:", e); showOverlay(sb, false); });
     }
     sb.auth.getSession().then(function (r) { decidir(r.data && r.data.session); }).catch(function () {});
     sb.auth.onAuthStateChange(function (_e, session) { decidir(session); });
