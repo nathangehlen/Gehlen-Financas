@@ -333,7 +333,7 @@ $('#add').addEventListener('click',async()=>{
   if(!nome||!(valor>0)) return;
   $('#add').disabled=true; setState('sync','Salvando…');
   const ok=await inserir({cliente:nome, tel:selTel||null, tipo, valor, descricao:($('#desc').value||'').trim(), vence_em:($('#vence').value||null), criado_por:ME});
-  if(ok){ nomeInp.value=''; selTel=''; $('#valor').value=''; $('#desc').value=''; $('#vence').value=''; }
+  if(ok){ nomeInp.value=''; selTel=''; $('#valor').value=''; $('#desc').value=''; $('#vence').value=hojeYMD(); }
   checkAdd();
 });
 
@@ -404,6 +404,7 @@ function clienteCard(o){
   el.querySelector('.tgl-favor').addEventListener('click',e=>{ e.stopPropagation(); deveForm.hidden=true; favorForm.hidden=!favorForm.hidden; if(!favorForm.hidden) el.querySelector('.if-desc2').focus(); });
 
   const dDesc=el.querySelector('.if-desc'), dVal=el.querySelector('.if-valor'), dVen=el.querySelector('.if-vence'), dBtn=el.querySelector('.if-save-deve');
+  dVen.value=hojeYMD();   // data já vem com o dia de hoje, editável
   const chkD=()=>{ dBtn.disabled=!((dDesc.value||'').trim() && parseVal(dVal.value)>0); };
   [dDesc,dVal].forEach(x=>x.addEventListener('input',chkD));
   [dDesc,dVal,dVen].forEach(x=>x.addEventListener('click',e=>e.stopPropagation()));
@@ -451,6 +452,7 @@ function render(){
     `<span class="pill"><b>${quit.length}</b> quitados</span>`;
 }
 $('#busca').addEventListener('input',render);
+try{ $('#vence').value=hojeYMD(); }catch(e){}   // data do topo já vem com hoje
 </script>
 
 <script>window.GC_MODULE="caderneta";</script>
