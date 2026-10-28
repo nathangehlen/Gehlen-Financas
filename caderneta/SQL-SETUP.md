@@ -13,6 +13,7 @@ create table if not exists public.caderneta (
   tipo        text not null check (tipo in ('deve','favor','pagou')),
   valor       numeric(10,2) not null check (valor >= 0),
   descricao   text,
+  vence_em    date,
   criado_por  text,
   criado_em   timestamptz not null default now()
 );
@@ -28,6 +29,18 @@ create policy "caderneta_select_auth" on public.caderneta
 create policy "caderneta_insert_auth" on public.caderneta
   for insert to authenticated with check (true);
 ```
+
+## Atualização 28/10 — data de cobrança
+
+Se a tabela já existe (criada antes), rode só isto pra adicionar a coluna da
+data em que o cliente vai pagar:
+
+```sql
+alter table public.caderneta add column if not exists vence_em date;
+```
+
+(Quem for criar a tabela do zero agora pelo bloco acima: rode também este ALTER,
+ou adicione `vence_em date` na criação.)
 
 Notas:
 - `tipo`: `deve` (o cliente pegou algo / está devendo), `favor` (crédito a favor dele),

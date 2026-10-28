@@ -85,6 +85,10 @@ section{margin-top:22px}
 .clihead{display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer}
 .clihead .nm{font-weight:600;font-size:1rem;flex:1;min-width:0}
 .clihead .nm small{display:block;color:var(--muted);font-size:.76rem;font-weight:400;font-family:var(--num)}
+.cobrar{display:inline-block;margin-top:4px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:2px 8px;border-radius:999px}
+.cobrar.fut{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber)}
+.cobrar.hoje{background:var(--red-bg);color:var(--red);border:1px solid var(--red)}
+.cobrar.atraso{background:var(--red);color:#fff}
 .saldo{font-family:var(--num);font-weight:700;font-size:1.05rem;text-align:right;white-space:nowrap}
 .saldo.deve{color:var(--red)} .saldo.favor{color:var(--green)} .saldo.zero{color:var(--muted)}
 .saldo small{display:block;font-size:.6rem;font-weight:600;letter-spacing:.5px;color:var(--muted)}
@@ -102,7 +106,11 @@ section{margin-top:22px}
 .itag.deve{background:var(--red-bg);color:var(--red)}
 .itag.favor{background:var(--green-bg);color:var(--green)}
 .itag.pagou{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
-.cliact{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.cliact{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.inlineform{margin-top:10px;padding:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px}
+.inlineform .inp{margin-bottom:8px}
+.inlineform .addbtn{padding:10px}
+.inlineform[hidden]{display:none}
 .payline{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .payline .inp{flex:1;min-width:120px}
 .bpay{background:var(--green);color:#06301a;border:none;border-radius:9px;padding:9px 14px;font:inherit;font-weight:700;font-size:.84rem;cursor:pointer}
@@ -164,9 +172,15 @@ section{margin-top:22px}
       <input class="inp" id="valor" type="text" inputmode="decimal" placeholder="0,00">
     </div>
   </div>
-  <div class="fld">
-    <label for="desc">O que foi (nome do valor)</label>
-    <input class="inp" id="desc" type="text" placeholder="Ex.: pomada, corte do filho, produto…">
+  <div class="row2">
+    <div class="fld">
+      <label for="desc">O que foi (nome do valor)</label>
+      <input class="inp" id="desc" type="text" placeholder="Ex.: pomada, corte do filho, produto…">
+    </div>
+    <div class="fld">
+      <label for="vence">Quando vai pagar (opcional)</label>
+      <input class="inp" id="vence" type="date">
+    </div>
   </div>
   <button class="addbtn" id="add" disabled>Salvar na caderneta</button>
 </div>
@@ -181,11 +195,16 @@ section{margin-top:22px}
 </section>
 
 <section>
+  <div class="shead"><h2>Créditos a favor</h2></div>
+  <div id="listFavor"></div>
+</section>
+
+<section>
   <div class="shead"><h2>Quitados</h2></div>
   <div id="listQuit"></div>
 </section>
 
-<p class="foot" id="foot">Tudo que a Milena anota aqui fica salvo no servidor (não some ao fechar a página e vale em qualquer aparelho). O saldo de cada cliente é o que ele <b>deve</b> menos os <b>créditos a favor</b> e menos o que já <b>pagou</b>. Nada é apagado: cada lançamento fica no histórico do cliente.</p>
+<p class="foot" id="foot">Cada cliente tem <b>uma conta só</b>. Abra o cliente pra ver tudo e usar os botões: <b>Registrar pagamento</b>, <b>Novo débito</b> (pegou mais algo) e <b>Novo crédito a favor</b> — sempre com um nome pra cada valor e a data em que foi pego. Se o cliente pagar mais do que devia, o troco vira <b>crédito a favor</b> e ele passa pro grupo de crédito. Tudo fica salvo no servidor (não some e vale em qualquer aparelho); nada é apagado, cada lançamento fica no histórico.</p>
 </div>
 
 <script>
@@ -223,6 +242,11 @@ function parseVal(s){ const n=parseFloat(String(s||'').replace(/[^\d,.-]/g,'').r
 function telKey(x){ const d=String(x||'').replace(/\D/g,''); return d.length>=10?d.slice(-10):d; }
 function esc(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
 function fmtDT(iso){ try{const d=new Date(iso);return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();}catch(e){return '';} }
+/* data "só dia" (YYYY-MM-DD) -> DD/MM e comparação com hoje, sem fuso */
+function fmtDM2(ymd){ const m=String(ymd||'').match(/^(\d{4})-(\d{2})-(\d{2})/); return m?m[3]+'/'+m[2]:''; }
+function hojeYMD(){ const d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+function diasAte(ymd){ const m=String(ymd||'').match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m) return null;
+  const a=new Date(+m[1],+m[2]-1,+m[3]); const h=new Date(); h.setHours(0,0,0,0); return Math.round((a-h)/86400000); }
 
 function setState(kind,msg){ const el=$('#state'); el.className='state '+kind; el.textContent=msg; }
 
@@ -252,9 +276,14 @@ function grupos(){
     const v=Number(it.valor)||0;
     if(it.tipo==='deve') o.saldo+=v;
     else o.saldo-=v;                 // favor e pagou abatem
+    if(it.tipo==='deve' && it.vence_em && (!o.vence || it.vence_em<o.vence)) o.vence=it.vence_em;
   }
   const arr=[...g.values()];
-  arr.forEach(o=>{ o.saldo=Math.round(o.saldo*100)/100; o.itens.sort((a,b)=> new Date(b.criado_em)-new Date(a.criado_em)); });
+  arr.forEach(o=>{ o.saldo=Math.round(o.saldo*100)/100; o.itens.sort((a,b)=> new Date(b.criado_em)-new Date(a.criado_em));
+    // só mostra a data de cobrança enquanto o cliente ainda deve
+    o.cobrarEm = (o.saldo>0 && o.vence) ? o.vence : null;
+    o.diasCobrar = o.cobrarEm ? diasAte(o.cobrarEm) : null;
+  });
   return arr;
 }
 
@@ -287,7 +316,7 @@ $('#seg').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
 }));
 
 function checkAdd(){
-  const ok=(nomeInp.value||'').trim() && parseVal($('#valor').value)>0;
+  const ok=(nomeInp.value||'').trim() && parseVal($('#valor').value)>0 && ($('#desc').value||'').trim();
   $('#add').disabled=!ok;
 }
 $('#valor').addEventListener('input',checkAdd);
@@ -303,12 +332,20 @@ $('#add').addEventListener('click',async()=>{
   const nome=(nomeInp.value||'').trim(); const valor=parseVal($('#valor').value);
   if(!nome||!(valor>0)) return;
   $('#add').disabled=true; setState('sync','Salvando…');
-  const ok=await inserir({cliente:nome, tel:selTel||null, tipo, valor, descricao:($('#desc').value||'').trim(), criado_por:ME});
-  if(ok){ nomeInp.value=''; selTel=''; $('#valor').value=''; $('#desc').value=''; }
+  const ok=await inserir({cliente:nome, tel:selTel||null, tipo, valor, descricao:($('#desc').value||'').trim(), vence_em:($('#vence').value||null), criado_por:ME});
+  if(ok){ nomeInp.value=''; selTel=''; $('#valor').value=''; $('#desc').value=''; $('#vence').value=hojeYMD(); }
   checkAdd();
 });
 
 /* ---------- render ---------- */
+function cobrarBadge(o){
+  if(!o.cobrarEm) return '';
+  const d=o.diasCobrar;
+  let cls='fut', txt='Pagar dia '+fmtDM2(o.cobrarEm);
+  if(d===0){ cls='hoje'; txt='Cobrar hoje'; }
+  else if(d<0){ cls='atraso'; txt='Atrasado desde '+fmtDM2(o.cobrarEm); }
+  return ` <span class="cobrar ${cls}">${txt}</span>`;
+}
 function clienteCard(o){
   const el=document.createElement('div');
   const quit = o.saldo===0;
@@ -317,7 +354,7 @@ function clienteCard(o){
   const lbl = o.saldo>0?'DEVE':(o.saldo<0?'A FAVOR':'QUITADO');
   el.innerHTML=`
     <div class="clihead">
-      <div class="nm">${esc(o.cliente)}${o.tel?`<small>${esc(o.tel)}</small>`:''}</div>
+      <div class="nm">${esc(o.cliente)}${o.tel?`<small>${esc(o.tel)}</small>`:''}${cobrarBadge(o)}</div>
       <div class="saldo ${cls}">${o.saldo===0?'R$ 0,00':money(Math.abs(o.saldo))}<small>${lbl}</small></div>
       <span class="caret">▶</span>
     </div>
@@ -327,7 +364,7 @@ function clienteCard(o){
         return `<div class="item">
           <div class="idesc">${esc(it.descricao||(it.tipo==='pagou'?'Pagamento':it.tipo==='favor'?'Crédito':'Conta'))}
             <span class="itag ${it.tipo}">${it.tipo==='deve'?'Pegou':it.tipo==='favor'?'A favor':'Pagou'}</span>
-            <div class="dt">${fmtDT(it.criado_em)}${it.criado_por?' · '+esc(String(it.criado_por).split('@')[0]):''}</div>
+            <div class="dt">${fmtDT(it.criado_em)}${it.criado_por?' · '+esc(String(it.criado_por).split('@')[0]):''}${(it.tipo==='deve'&&it.vence_em)?' · paga dia '+fmtDM2(it.vence_em):''}</div>
           </div>
           <div class="ival ${it.tipo}">${it.tipo==='deve'?'+':'−'}${money(v)}</div>
         </div>`;
@@ -337,8 +374,21 @@ function clienteCard(o){
         <button class="bpay">Registrar pagamento</button>
       </div>
       <div class="cliact">
-        <button class="badd deve2">+ Pegou algo</button>
-        <button class="badd favor2">+ Crédito a favor</button>
+        <button class="badd tgl-deve">+ Novo débito</button>
+        <button class="badd tgl-favor">+ Novo crédito a favor</button>
+      </div>
+      <div class="inlineform deveform" hidden>
+        <input class="inp if-desc" type="text" placeholder="Do que foi? (ex.: sobrancelha, produto)">
+        <div class="row2">
+          <input class="inp if-valor" type="text" inputmode="decimal" placeholder="Valor (R$)">
+          <input class="inp if-vence" type="date" title="Quando vai pagar (opcional)">
+        </div>
+        <button class="addbtn if-save-deve" disabled>Salvar débito</button>
+      </div>
+      <div class="inlineform favorform" hidden>
+        <input class="inp if-desc2" type="text" placeholder="Do que é o crédito? (ex.: troco, adiantou)">
+        <input class="inp if-valor2" type="text" inputmode="decimal" placeholder="Valor (R$)">
+        <button class="addbtn if-save-favor" disabled>Salvar crédito a favor</button>
       </div>
     </div>`;
   el.querySelector('.clihead').addEventListener('click',()=>el.classList.toggle('open'));
@@ -348,36 +398,61 @@ function clienteCard(o){
     e.target.disabled=true; setState('sync','Salvando pagamento…');
     await inserir({cliente:o.cliente, tel:o.tel||null, tipo:'pagou', valor:v, descricao:'Pagamento', criado_por:ME});
   });
-  el.querySelector('.deve2').addEventListener('click',e=>{ e.stopPropagation(); preencher(o,'deve'); });
-  el.querySelector('.favor2').addEventListener('click',e=>{ e.stopPropagation(); preencher(o,'favor'); });
+  // novo débito / novo crédito, direto no cliente (não duplica, não vai pro topo)
+  const deveForm=el.querySelector('.deveform'), favorForm=el.querySelector('.favorform');
+  el.querySelector('.tgl-deve').addEventListener('click',e=>{ e.stopPropagation(); favorForm.hidden=true; deveForm.hidden=!deveForm.hidden; if(!deveForm.hidden) el.querySelector('.if-desc').focus(); });
+  el.querySelector('.tgl-favor').addEventListener('click',e=>{ e.stopPropagation(); deveForm.hidden=true; favorForm.hidden=!favorForm.hidden; if(!favorForm.hidden) el.querySelector('.if-desc2').focus(); });
+
+  const dDesc=el.querySelector('.if-desc'), dVal=el.querySelector('.if-valor'), dVen=el.querySelector('.if-vence'), dBtn=el.querySelector('.if-save-deve');
+  dVen.value=hojeYMD();   // data já vem com o dia de hoje, editável
+  const chkD=()=>{ dBtn.disabled=!((dDesc.value||'').trim() && parseVal(dVal.value)>0); };
+  [dDesc,dVal].forEach(x=>x.addEventListener('input',chkD));
+  [dDesc,dVal,dVen].forEach(x=>x.addEventListener('click',e=>e.stopPropagation()));
+  dBtn.addEventListener('click',async e=>{ e.stopPropagation(); if(dBtn.disabled) return;
+    dBtn.disabled=true; setState('sync','Salvando débito…');
+    await inserir({cliente:o.cliente, tel:o.tel||null, tipo:'deve', valor:parseVal(dVal.value), descricao:(dDesc.value||'').trim(), vence_em:(dVen.value||null), criado_por:ME});
+  });
+
+  const fDesc=el.querySelector('.if-desc2'), fVal=el.querySelector('.if-valor2'), fBtn=el.querySelector('.if-save-favor');
+  const chkF=()=>{ fBtn.disabled=!((fDesc.value||'').trim() && parseVal(fVal.value)>0); };
+  [fDesc,fVal].forEach(x=>{ x.addEventListener('input',chkF); x.addEventListener('click',e=>e.stopPropagation()); });
+  fBtn.addEventListener('click',async e=>{ e.stopPropagation(); if(fBtn.disabled) return;
+    fBtn.disabled=true; setState('sync','Salvando crédito…');
+    await inserir({cliente:o.cliente, tel:o.tel||null, tipo:'favor', valor:parseVal(fVal.value), descricao:(fDesc.value||'').trim(), criado_por:ME});
+  });
   return el;
-}
-function preencher(o,t){
-  nomeInp.value=o.cliente; selTel=o.tel||''; tipo=t;
-  $('#seg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.getAttribute('data-k')===t));
-  $('#valor').focus(); checkAdd(); window.scrollTo({top:0,behavior:'smooth'});
 }
 function render(){
   const q=($('#busca').value||'').trim().toLowerCase();
   let gs=grupos();
   if(q) gs=gs.filter(o=>o.cliente.toLowerCase().includes(q));
-  const aberto=gs.filter(o=>o.saldo!==0).sort((a,b)=>Math.abs(b.saldo)-Math.abs(a.saldo));
+  const aberto=gs.filter(o=>o.saldo>0).sort((a,b)=>{
+    // quem tem data de cobrança vencida/hoje primeiro, depois por data mais próxima, depois maior saldo
+    const da=(a.diasCobrar===null?99999:a.diasCobrar), db=(b.diasCobrar===null?99999:b.diasCobrar);
+    if(da!==db) return da-db;
+    return b.saldo-a.saldo;
+  });
+  const favor=gs.filter(o=>o.saldo<0).sort((a,b)=>a.saldo-b.saldo);     // mais crédito primeiro
   const quit=gs.filter(o=>o.saldo===0).sort((a,b)=>a.cliente.localeCompare(b.cliente));
-  const la=$('#listAberto'), lq=$('#listQuit');
-  la.innerHTML=''; lq.innerHTML='';
+  const la=$('#listAberto'), lf=$('#listFavor'), lq=$('#listQuit');
+  la.innerHTML=''; lf.innerHTML=''; lq.innerHTML='';
   if(!aberto.length) la.innerHTML='<div class="empty">Nenhuma conta em aberto.</div>';
   else aberto.forEach(o=>la.appendChild(clienteCard(o)));
+  if(!favor.length) lf.innerHTML='<div class="empty">Ninguém com crédito a favor.</div>';
+  else favor.forEach(o=>lf.appendChild(clienteCard(o)));
   if(!quit.length) lq.innerHTML='<div class="empty">Ninguém quitado por aqui ainda.</div>';
   else quit.forEach(o=>lq.appendChild(clienteCard(o)));
-  const totDeve=aberto.filter(o=>o.saldo>0).reduce((s,o)=>s+o.saldo,0);
-  const nDeve=aberto.filter(o=>o.saldo>0).length;
-  const nFavor=aberto.filter(o=>o.saldo<0).length;
+  const totDeve=aberto.reduce((s,o)=>s+o.saldo,0);
+  const totFavor=favor.reduce((s,o)=>s-o.saldo,0);
+  const nCobrar=aberto.filter(o=>o.diasCobrar!==null&&o.diasCobrar<=0).length;
   $('#counts').innerHTML=
-    `<span class="pill red"><b>${nDeve}</b> devendo · ${money(totDeve)}</span>`+
-    (nFavor?`<span class="pill green"><b>${nFavor}</b> com crédito</span>`:'')+
+    `<span class="pill red"><b>${aberto.length}</b> devendo · ${money(totDeve)}</span>`+
+    (nCobrar?`<span class="pill red"><b>${nCobrar}</b> pra cobrar hoje/atrasado</span>`:'')+
+    (favor.length?`<span class="pill green"><b>${favor.length}</b> com crédito · ${money(totFavor)}</span>`:'')+
     `<span class="pill"><b>${quit.length}</b> quitados</span>`;
 }
 $('#busca').addEventListener('input',render);
+try{ $('#vence').value=hojeYMD(); }catch(e){}   // data do topo já vem com hoje
 </script>
 
 <script>window.GC_MODULE="caderneta";</script>
