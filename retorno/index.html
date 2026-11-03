@@ -567,6 +567,19 @@ $('#busca').addEventListener('input', renderBusca);
 render();
 </script>
 
+<script>
+/* Abertura do dia: quando a agenda do dia chega (do banco ou recém-subida),
+   processa igual a um upload manual. */
+window.GConAbertura=function(d){
+  try{
+    if(!d||!d.agenda) return;
+    Papa.parse(d.agenda,{header:true,skipEmptyLines:'greedy',complete:res=>{
+      try{ LAST_AGENDA=res.data; DATA=computar(res.data); reconciliarAgendados(); render(); }catch(err){ banner('err','Não consegui ler a agenda do dia: '+err.message); }
+    }});
+  }catch(e){}
+};
+</script>
+<script src="/abertura.js" defer></script>
 <script>window.GC_MODULE="retorno";</script>
 <script src="/switch.js" defer></script>
 </body>
