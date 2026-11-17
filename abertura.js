@@ -260,7 +260,7 @@
           return;
         }
         var d = r && r.data;
-        var extDay = !!(d && d.extratoDay); // hoje é dia de extrato? (a cada 3 dias)
+        var extDay = false; // extratos saíram da Abertura (Nathan manda Sicoob/Neon pela conversa) — nunca pede os extratos aqui
         if (d && d.has && !extDay) {
           aplicar(d.contratos || "", d.agenda || "");
           removeOverlay();
